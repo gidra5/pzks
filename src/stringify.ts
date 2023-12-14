@@ -22,7 +22,8 @@ export const stringifyAccessExpression = (item: AccessExpression): string => {
     .join(".");
 };
 export const stringifyExpression = (item: Expression): string => {
-  return stringifyBoolean(item);
+  return stringifySum(item);
+  // return stringifyBoolean(item);
 };
 export const stringifyBoolean = (item: Boolean): string => {
   const [head, rest] = item;
@@ -42,9 +43,10 @@ export const stringifySum = (item: Sum): string => {
 };
 export const stringifyProduct = (item: Product): string => {
   const [head, rest] = item;
-  const headStringified = stringifyPrefix(head);
+  const headStringified = stringifyValue(head);
   const restStringified = rest.reduce((acc, item) => {
-    return acc + item.type + stringifyPrefix(item.item);
+    // return acc + item.type + stringifyPrefix(item.item);
+    return acc + item.type + stringifyValue(item.item);
   }, "");
   return headStringified + restStringified;
 };
@@ -58,6 +60,7 @@ export const stringifyValue = (item: Value): string => {
   if (item.type === "bool") return item.item.toString();
   if (item.type === "num") return item.item.toString();
   if (item.type === "str") return `"${item.item}"`;
-  if (item.type === "name") return stringifyAccessExpression(item.item);
+  // if (item.type === "name") return stringifyAccessExpression(item.item);
+  if (item.type === "name") return item.item;
   return `(${stringifyExpression(item.item)})`;
 };

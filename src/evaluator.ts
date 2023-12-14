@@ -40,7 +40,8 @@ export const evalValue = (expr: Value, ctx: Context): EvalValue => {
   if (expr.type === "num" || expr.type === "bool") return expr.item;
   if (expr.type === "str") return expr.item;
   if (expr.type === "expr") return evalExpr(expr.item, ctx);
-  return evalName(expr.item, ctx);
+  // return evalName(expr.item, ctx);
+  return evalName([expr], ctx);
 };
 
 export const evalPrefix = (expr: Prefix, ctx: Context): EvalValue => {
@@ -66,10 +67,10 @@ export const evalPrefix = (expr: Prefix, ctx: Context): EvalValue => {
 
 export const evalProduct = (expr: Product, ctx: Context): EvalValue => {
   const [value, rest] = expr;
-  const val = evalPrefix(value, ctx);
+  const val = evalValue(value, ctx);
 
   return rest.reduce((acc, item) => {
-    const right = evalPrefix(item.item, ctx);
+    const right = evalValue(item.item, ctx);
 
     if (item.type === "??") return acc ?? right;
 
@@ -135,7 +136,7 @@ export const evalBoolean = (expr: Boolean, ctx: Context): EvalValue => {
 };
 
 export const evalExpr = (expr: Expression, ctx: Context): EvalValue => {
-  const res = evalBoolean(expr, ctx);
+  const res = evalSum(expr, ctx);
   return res;
 };
 

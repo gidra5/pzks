@@ -124,14 +124,14 @@ export const parseSum: TokenParser<Sum> = (str, index = 0) => {
 export const parseProduct: TokenParser<Product> = (str, index = 0) => {
   const errors: ParsingError[] = [];
   const rest: Product[1] = [];
-  const [i, prefix, _err] = parsePrefix(str, index);
+  const [i, prefix, _err] = parseValue(str, index);
   errors.push(..._err);
   index = i;
 
   while (str[index]) {
     const token = str[index];
     if (token.src !== "??" && token.src !== "*" && token.src !== "/") break;
-    const [i, restPrefix, _err] = parsePrefix(str, index + 1);
+    const [i, restPrefix, _err] = parseValue(str, index + 1);
     errors.push(..._err);
 
     rest.push({ type: token.src as "*" | "/" | "??", item: restPrefix });
@@ -156,6 +156,7 @@ export const parsePrefix: TokenParser<Prefix> = (str, index = 0) => {
 };
 
 export const parseValue: TokenParser<Value> = (str, index = 0) => {
+  const errors: ParsingError[] = [];
   const token = str[index];
   if (token.type === "number") {
     return [index + 1, value("num", token.value), []];
@@ -190,6 +191,11 @@ export const parseValue: TokenParser<Value> = (str, index = 0) => {
     return [i + 1, value("expr", expr), errors];
   }
 
-  const [i, expr, _err] = parseAccessExpression(str, index);
-  return [i, value("name", expr), _err];
+  if (token.type === "symbol") {
+    errors.push(error(`symbol can't be used in place of value`));
+  }
+  return [index, value("name", token.src), errors];
+
+  // const [i, expr, _err] = parseAccessExpression(str, index);
+  // return [i, value("name", expr), _err];
 };

@@ -23,13 +23,21 @@ export const accessExpression = (
   ][]
 ) => parts.map(([type, item]) => ({ type, item })) as AccessExpression;
 
+// export const expr = (
+//   head: Expression[0],
+//   ...rest: [
+//     type: Expression[1][number]["type"],
+//     item: Expression[1][number]["item"]
+//   ][]
+// ) => bool(head, ...rest) as Expression;
+
 export const expr = (
   head: Expression[0],
   ...rest: [
     type: Expression[1][number]["type"],
     item: Expression[1][number]["item"]
   ][]
-) => bool(head, ...rest) as Expression;
+) => sum(head, ...rest) as Expression;
 
 export const bool = (
   head: Boolean[0],

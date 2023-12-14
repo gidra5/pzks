@@ -79,7 +79,7 @@ export type AccessExpression = TaggedItemUnion<{
 export type Expression = Sum;
 export type Boolean = [Sum, { type: BooleanOp; item: Sum }[]];
 export type Sum = [Product, { type: "+" | "-"; item: Product }[]];
-export type Product = [Prefix, { type: "*" | "/" | "??"; item: Prefix }[]];
+export type Product = [Value, { type: "*" | "/" | "??"; item: Value }[]];
 export type Prefix = [
   value: Value,
   operator?: {
@@ -90,7 +90,7 @@ export type Value = TaggedItemUnion<{
   num: number;
   bool: boolean;
   str: string;
-  name: AccessExpression;
+  name: string;
   expr: Expression;
 }>;
 export type EvalValue = number | boolean | string;

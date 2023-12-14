@@ -159,11 +159,11 @@ test("parseTokens", () => {
     { type: "number", src: "42", value: 42 },
     { type: "string", src: '"Hello"', value: "Hello" },
     { type: "identifier", src: "variable" },
-    { type: "identifier", src: "(" },
-    { type: "identifier", src: "(" },
+    { type: "symbol", src: "(" },
+    { type: "symbol", src: "(" },
     { type: "identifier", src: "expr" },
-    { type: "identifier", src: ")" },
-    { type: "identifier", src: ")" },
+    { type: "symbol", src: ")" },
+    { type: "symbol", src: ")" },
   ];
   const expectedErrors = [];
 

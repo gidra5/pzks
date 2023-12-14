@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 
 describe("parsing", () => {
-  const examples = 
+  const examples = [];
   // const testCase = (src, out, expectedErrors = []) =>
   //   it(`parses and stringifies "${src}"`, () => {
   //     const [tree, errors] = parse(src);
