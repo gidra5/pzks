@@ -113,26 +113,6 @@ describe("parseToken - number token", () => {
   );
 });
 
-// Test case: Parsing a whitespace token
-// test.prop([fc.string({ minLength: 1 }).filter((s) => !s.match(/[^\s]/))])(
-//   "parseToken - whitespace and newline token",
-//   (src) => {
-//     const startIndex = 0;
-//     const expectedToken = {
-//       type: src.includes("\n") ? "newline" : "whitespace",
-//       src,
-//     } satisfies Token;
-//     const expectedIndex = src.length;
-//     const expectedErrors = [];
-
-//     const [index, token, errors] = parseToken(src, startIndex);
-
-//     expect(index).toBe(expectedIndex);
-//     expect(token).toEqual(expectedToken);
-//     expect(errors).toEqual(expectedErrors);
-//   }
-// );
-
 // Test case: Parsing an identifier token
 test("parseToken - identifier token", () => {
   const src = "variable123";

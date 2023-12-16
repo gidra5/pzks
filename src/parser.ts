@@ -1,6 +1,5 @@
 import { error, value } from "./constructor";
 import {
-  Token,
   AccessExpression,
   Expression,
   BOOLEAN_OPS,
