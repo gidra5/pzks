@@ -1,35 +1,20 @@
-export type ParsingError = { message: string; cause?: ParsingError[] };
+export type Position = { start: number; end: number };
+export type ParsingError = { message: string; pos: Position; cause?: ParsingError[] };
 export type ConsumeParsingResult<T> = [result: T, errors: ParsingError[]];
-export type ParsingResult<T> = [
-  index: number,
-  ...result: ConsumeParsingResult<T>
-];
+export type ParsingResult<T> = [index: number, ...result: ConsumeParsingResult<T>];
 export type Parser<T, S, Consume extends boolean> = (
   src: S,
   i?: number
 ) => Consume extends true ? ConsumeParsingResult<T> : ParsingResult<T>;
-export type StringParser<T, Consume extends boolean = false> = Parser<
-  T,
-  string,
-  Consume
->;
-export type TokenParser<T, Consume extends boolean = false> = Parser<
-  T,
-  Token[],
-  Consume
->;
+export type StringParser<T, Consume extends boolean = false> = Parser<T, string, Consume>;
+export type TokenParser<T, Consume extends boolean = false> = Parser<T, Token[], Consume>;
 
 export type Context = Record<string, any>;
 
 export type Tagged<Type, T, TypeKey extends string = "type"> = {
   [k in TypeKey]: Type;
 } & T;
-export type TaggedItem<
-  Type,
-  T,
-  TypeKey extends string = "type",
-  ItemKey extends string = "item"
-> = {
+export type TaggedItem<Type, T, TypeKey extends string = "type", ItemKey extends string = "item"> = {
   [k in TypeKey]: Type;
 } & { [k in ItemKey]: T };
 
@@ -79,7 +64,7 @@ export type AccessExpression = TaggedItemUnion<{
 export type Expression = Sum;
 export type Boolean = [Sum, { type: BooleanOp; item: Sum }[]];
 export type Sum = [Product, { type: "+" | "-"; item: Product }[]];
-export type Product = [Value, { type: "*" | "/" | "??"; item: Value }[]];
+export type Product = [Value, { type: "*" | "/"; item: Value }[]];
 export type Prefix = [
   value: Value,
   operator?: {
