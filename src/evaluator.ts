@@ -8,6 +8,7 @@ import {
   Sum,
   Expression,
   Boolean,
+  Pow,
 } from "./types";
 import { assert } from "./utils";
 
@@ -49,30 +50,45 @@ export const evalPrefix = (expr: Prefix, ctx: Context): EvalValue => {
   const val = evalValue(value, ctx);
 
   if (rest) {
-    if (rest.type === "castString" && typeof val === "number") return `${val}`;
-    if (rest.type === "castString" && typeof val === "string") return `${val}`;
-    if (rest.type === "castNumber" && typeof val === "number")
-      return Number(val);
-    if (rest.type === "castNumber" && typeof val === "string")
-      return Number(val);
-    if (rest.type === "round" && typeof val === "number")
-      return Math.round(val);
-    if (rest.type === "ceil" && typeof val === "number") return Math.ceil(val);
-    if (rest.type === "floor" && typeof val === "number")
-      return Math.floor(val);
+    if (rest.type === "neg" && typeof val === "number") return -val;
+    // if (rest.type === "castString" && typeof val === "number") return `${val}`;
+    // if (rest.type === "castString" && typeof val === "string") return `${val}`;
+    // if (rest.type === "castNumber" && typeof val === "number")
+    //   return Number(val);
+    // if (rest.type === "castNumber" && typeof val === "string")
+    //   return Number(val);
+    // if (rest.type === "round" && typeof val === "number")
+    //   return Math.round(val);
+    // if (rest.type === "ceil" && typeof val === "number") return Math.ceil(val);
+    // if (rest.type === "floor" && typeof val === "number")
+    //   return Math.floor(val);
     return undefined as unknown as EvalValue;
   }
   return val;
 };
 
-export const evalProduct = (expr: Product, ctx: Context): EvalValue => {
+export const evalPow = (expr: Pow, ctx: Context): EvalValue => {
   const [value, rest] = expr;
-  const val = evalValue(value, ctx);
+  const val = evalPrefix(value, ctx);
 
   return rest.reduce((acc, item) => {
-    const right = evalValue(item.item, ctx);
+    const right = evalPrefix(item.item, ctx);
 
-    if (item.type === "??") return acc ?? right;
+    assert(
+      typeof right === "number" && typeof acc === "number",
+      `* and / are only applicable to numbers, got: ${acc} ${item.type} ${right}`
+    );
+
+    return Math.pow(acc, right);
+  }, val);
+};
+
+export const evalProduct = (expr: Product, ctx: Context): EvalValue => {
+  const [value, rest] = expr;
+  const val = evalPow(value, ctx);
+
+  return rest.reduce((acc, item) => {
+    const right = evalPow(item.item, ctx);
 
     assert(
       typeof right === "number" && typeof acc === "number",

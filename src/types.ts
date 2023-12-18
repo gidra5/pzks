@@ -1,20 +1,40 @@
 export type Position = { start: number; end: number };
-export type ParsingError = { message: string; pos: Position; cause?: ParsingError[] };
+export type ParsingError = {
+  message: string;
+  pos: Position;
+  cause?: ParsingError[];
+};
 export type ConsumeParsingResult<T> = [result: T, errors: ParsingError[]];
-export type ParsingResult<T> = [index: number, ...result: ConsumeParsingResult<T>];
+export type ParsingResult<T> = [
+  index: number,
+  ...result: ConsumeParsingResult<T>
+];
 export type Parser<T, S, Consume extends boolean> = (
   src: S,
   i?: number
 ) => Consume extends true ? ConsumeParsingResult<T> : ParsingResult<T>;
-export type StringParser<T, Consume extends boolean = false> = Parser<T, string, Consume>;
-export type TokenParser<T, Consume extends boolean = false> = Parser<T, Token[], Consume>;
+export type StringParser<T, Consume extends boolean = false> = Parser<
+  T,
+  string,
+  Consume
+>;
+export type TokenParser<T, Consume extends boolean = false> = Parser<
+  T,
+  Token[],
+  Consume
+>;
 
 export type Context = Record<string, any>;
 
 export type Tagged<Type, T, TypeKey extends string = "type"> = {
   [k in TypeKey]: Type;
 } & T;
-export type TaggedItem<Type, T, TypeKey extends string = "type", ItemKey extends string = "item"> = {
+export type TaggedItem<
+  Type,
+  T,
+  TypeKey extends string = "type",
+  ItemKey extends string = "item"
+> = {
   [k in TypeKey]: Type;
 } & { [k in ItemKey]: T };
 
@@ -56,6 +76,7 @@ export type Token =
   | { type: "symbol"; src: string }
   | { type: "number"; src: string; value: number }
   | { type: "string"; src: string; value: string };
+export type TokenPos = Token & { pos: Position };
 
 export type AccessExpression = TaggedItemUnion<{
   name: string;
@@ -64,7 +85,8 @@ export type AccessExpression = TaggedItemUnion<{
 export type Expression = Sum;
 export type Boolean = [Sum, { type: BooleanOp; item: Sum }[]];
 export type Sum = [Product, { type: "+" | "-"; item: Product }[]];
-export type Product = [Value, { type: "*" | "/"; item: Value }[]];
+export type Product = [Pow, { type: "*" | "/"; item: Pow }[]];
+export type Pow = [Prefix, { type: "^"; item: Prefix }[]];
 export type Prefix = [
   value: Value,
   operator?: {
@@ -83,11 +105,12 @@ export type EvalValue = number | boolean | string;
 // years months days hours minutes seconds
 export const BOOLEAN_OPS = ["and", "or"] as const;
 export const PREFIX_OPS = {
-  number: "castNumber",
-  string: "castString",
-  round: "round",
-  ceil: "ceil",
-  floor: "floor",
+  // number: "castNumber",
+  // string: "castString",
+  // round: "round",
+  // ceil: "ceil",
+  // floor: "floor",
+  "-": "neg",
 } as const;
 export type BooleanOp = (typeof BOOLEAN_OPS)[number];
 export type PrefixOp = keyof typeof PREFIX_OPS;

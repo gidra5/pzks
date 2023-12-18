@@ -1,7 +1,8 @@
 import { parseToken, parseTokens } from "../src/tokens.js";
 import { describe, expect } from "vitest";
 import { it, fc, test } from "@fast-check/vitest";
-import type { Token } from "../src/types";
+import type { Token, TokenPos } from "../src/types";
+import { position } from "../src/constructor.js";
 
 // Test case: Parsing a string token
 test.prop([fc.string().filter((s) => !s.includes("\\") && !s.includes('"'))])(
@@ -13,7 +14,7 @@ test.prop([fc.string().filter((s) => !s.includes("\\") && !s.includes('"'))])(
     const expectedIndex = value.length + 2;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(index).toBe(expectedIndex);
     expect(token).toEqual(expectedToken);
@@ -30,7 +31,7 @@ test.prop([fc.string({ maxLength: 1, minLength: 1 })])(
     const expectedIndex = 4;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(index).toBe(expectedIndex);
     expect(token).toEqual(expectedToken);
@@ -46,7 +47,7 @@ describe("parseToken - number token", () => {
     const expectedIndex = src.length;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(token).toEqual(expectedToken);
     expect(errors).toEqual(expectedErrors);
@@ -59,7 +60,7 @@ describe("parseToken - number token", () => {
     const expectedIndex = src.length;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(token).toEqual(expectedToken);
     expect(errors).toEqual(expectedErrors);
@@ -72,7 +73,7 @@ describe("parseToken - number token", () => {
     const expectedIndex = src.length;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(token).toEqual(expectedToken);
     expect(errors).toEqual(expectedErrors);
@@ -85,7 +86,7 @@ describe("parseToken - number token", () => {
     const expectedIndex = src.length;
     const expectedErrors = [];
 
-    const [index, token, errors] = parseToken(src, startIndex);
+    const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
     expect(token).toEqual(expectedToken);
     expect(errors).toEqual(expectedErrors);
@@ -104,7 +105,7 @@ describe("parseToken - number token", () => {
       const expectedIndex = src.length;
       const expectedErrors = [];
 
-      const [index, token, errors] = parseToken(src, startIndex);
+      const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
       expect(token).toEqual(expectedToken);
       expect(errors).toEqual(expectedErrors);
@@ -124,7 +125,7 @@ test("parseToken - identifier token", () => {
   const expectedIndex = src.length;
   const expectedErrors = [];
 
-  const [index, token, errors] = parseToken(src, startIndex);
+  const [index, { pos, ...token }, errors] = parseToken(src, startIndex);
 
   expect(index).toBe(expectedIndex);
   expect(token).toEqual(expectedToken);
@@ -135,15 +136,15 @@ test("parseToken - identifier token", () => {
 test("parseTokens", () => {
   const src = '42 "Hello" variable ((expr))';
   const startIndex = 0;
-  const expectedTokens: Token[] = [
-    { type: "number", src: "42", value: 42 },
-    { type: "string", src: '"Hello"', value: "Hello" },
-    { type: "identifier", src: "variable" },
-    { type: "symbol", src: "(" },
-    { type: "symbol", src: "(" },
-    { type: "identifier", src: "expr" },
-    { type: "symbol", src: ")" },
-    { type: "symbol", src: ")" },
+  const expectedTokens: TokenPos[] = [
+    { type: "number", src: "42", value: 42, pos: position(0, 2) },
+    { type: "string", src: '"Hello"', value: "Hello", pos: position(3, 10) },
+    { type: "identifier", src: "variable", pos: position(11, 19) },
+    { type: "symbol", src: "(", pos: position(20, 21) },
+    { type: "symbol", src: "(", pos: position(21, 22) },
+    { type: "identifier", src: "expr", pos: position(22, 26) },
+    { type: "symbol", src: ")", pos: position(26, 27) },
+    { type: "symbol", src: ")", pos: position(27, 28) },
   ];
   const expectedErrors = [];
 

@@ -7,7 +7,7 @@
   "scripts": {
     "run": "tsc && node ./build/index.js",
     "test": "vitest run",
-    "watch": "vitest --ui"
+    "watch": "vitest --singleThread"
   },
   "keywords": [
     "pzks"
@@ -15,6 +15,7 @@
   "author": "Roman Khranovskiy",
   "license": "MIT",
   "dependencies": {
+    "codespan-napi": "^0.4.0",
     "commander": "^9.3.0"
   },
   "devDependencies": {

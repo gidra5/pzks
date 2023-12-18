@@ -1,22 +1,32 @@
-import { position, error, value, intervalPosition, indexPosition, product } from "./constructor";
+import {
+  position,
+  error,
+  value,
+  intervalPosition,
+  product,
+  token,
+  prefix,
+  pow,
+} from "./constructor";
 import {
   AccessExpression,
   Expression,
-  BOOLEAN_OPS,
   Sum,
   Product,
-  Prefix,
-  PREFIX_OPS,
-  PrefixOp,
-  Boolean,
   Value,
   TokenParser,
   ParsingError,
+  PREFIX_OPS,
+  PrefixOp,
+  Prefix,
+  Pow,
 } from "./types";
+import { endOfTokensError } from "./utils";
 
-const endOfTokensError = (index: number) => error("end of tokens", indexPosition(index));
-
-export const parseAccessExpression: TokenParser<AccessExpression> = (str, index = 0) => {
+export const parseAccessExpression: TokenParser<AccessExpression> = (
+  str,
+  index = 0
+) => {
   const start = index;
   const errors: ParsingError[] = [];
   const items: AccessExpression = [];
@@ -30,7 +40,12 @@ export const parseAccessExpression: TokenParser<AccessExpression> = (str, index 
     }
 
     if (token.type === "symbol") {
-      errors.push(error("can't be part of access expression", intervalPosition(index - 1, 1)));
+      errors.push(
+        error(
+          "can't be part of access expression",
+          intervalPosition(index - 1, 1)
+        )
+      );
       items.push({ item: token.src, type: "name" });
       return;
     }
@@ -105,25 +120,38 @@ export const parseSum =
 
     while (str[index]) {
       const start = index;
-      const token = str[index];
-      const isSumOp = token.src === "+" || token.src === "-";
-      if (token.type !== "symbol" || !isSumOp) {
-        break;
+      let _token = str[index];
+      const isSumOp = _token.src === "+" || _token.src === "-";
+      if (_token.type !== "symbol" || !isSumOp) {
+        if (parens === 0 && index < str.length - 1) {
+          errors.push(error("missing operator", position(start, index)));
+          _token = token("symbol", "_");
+        } else {
+          break;
+        }
+      } else {
+        index++;
       }
 
-      index++;
-
       if (!str[index]) {
-        errors.push(error("missing operand", position(start, index), [endOfTokensError(index)]));
-        rest.push({ type: token.src as "+" | "-", item: product(value("name", "_")) });
+        errors.push(
+          error("missing operand", position(start, index), [
+            endOfTokensError(index),
+          ])
+        );
+        rest.push({
+          type: _token.src as "+" | "-",
+          item: product(pow(prefix(value("name", "_")))),
+        });
         break;
       }
 
       const [i, restProduct, _err] = parseProduct(parens)(str, index);
       errors.push(..._err);
 
-      rest.push({ type: token.src as "+" | "-", item: restProduct });
-      index = i;
+      rest.push({ type: _token.src as "+" | "-", item: restProduct });
+      if (i !== index) index = i;
+      else index++;
     }
 
     return [index, [_product, rest], errors];
@@ -134,7 +162,7 @@ export const parseProduct =
   (str, index = 0) => {
     const errors: ParsingError[] = [];
     const rest: Product[1] = [];
-    const [i, prefix, _err] = parseValue(parens)(str, index);
+    const [i, _prefix, _err] = parsePow(parens)(str, index);
     errors.push(..._err);
     index = i;
 
@@ -146,33 +174,83 @@ export const parseProduct =
       index++;
 
       if (!str[index]) {
-        errors.push(error("missing operand", position(start, index), [endOfTokensError(index)]));
-        rest.push({ type: token.src as "*" | "/", item: value("name", "_") });
+        errors.push(
+          error("missing operand", position(start, index), [
+            endOfTokensError(index),
+          ])
+        );
+        rest.push({
+          type: token.src as "*" | "/",
+          item: pow(prefix(value("name", "_"))),
+        });
         break;
       }
 
-      const [i, restPrefix, _err] = parseValue(parens)(str, index);
+      const [i, restPrefix, _err] = parsePow(parens)(str, index);
       errors.push(..._err);
 
       rest.push({ type: token.src as "*" | "/", item: restPrefix });
       index = i;
     }
 
-    return [index, [prefix, rest], errors];
+    return [index, [_prefix, rest], errors];
+  };
+export const parsePow =
+  (parens = 0): TokenParser<Pow> =>
+  (str, index = 0) => {
+    const errors: ParsingError[] = [];
+    const rest: Pow[1] = [];
+    const [i, _prefix, _err] = parsePrefix(parens)(str, index);
+    errors.push(..._err);
+    index = i;
+
+    while (str[index]) {
+      const start = index;
+      const token = str[index];
+      if (token.src !== "^") break;
+
+      index++;
+
+      if (!str[index]) {
+        errors.push(
+          error("missing operand", position(start, index), [
+            endOfTokensError(index),
+          ])
+        );
+        rest.push({
+          type: token.src as "^",
+          item: prefix(value("name", "_")),
+        });
+        break;
+      }
+
+      const [i, restPrefix, _err] = parsePrefix(parens)(str, index);
+      errors.push(..._err);
+
+      rest.push({ type: token.src as "^", item: restPrefix });
+      index = i;
+    }
+
+    return [index, [_prefix, rest], errors];
   };
 
-// export const parsePrefix: TokenParser<Prefix> = (str, index = 0) => {
-//   const token = str[index];
-//   let rest: Prefix[1];
-//   if (token.type === "identifier" && token.src in PREFIX_OPS) {
-//     rest = { type: PREFIX_OPS[token.src as PrefixOp] };
-//     index++;
-//   }
-//   const [i, value, errors] = parseValue(str, index);
-//   index = i;
+export const parsePrefix =
+  (parens = 0): TokenParser<Prefix> =>
+  (str, index = 0) => {
+    const token = str[index];
+    let rest: Prefix[1];
+    if (
+      (token.type === "identifier" || token.type === "symbol") &&
+      token.src in PREFIX_OPS
+    ) {
+      rest = { type: PREFIX_OPS[token.src as PrefixOp] };
+      index++;
+    }
+    const [i, value, errors] = parseValue(parens)(str, index);
+    index = i;
 
-//   return [index, [value, rest], errors];
-// };
+    return [index, [value, rest], errors];
+  };
 
 export const parseValue =
   (parens = 0): TokenParser<Value> =>
@@ -200,7 +278,11 @@ export const parseValue =
 
       let errors: ParsingError[] = [];
       if (!str[index]) {
-        errors.push(error("unbalanced parens", position(start, index), [endOfTokensError(index)]));
+        errors.push(
+          error("unbalanced parens", position(start, index), [
+            endOfTokensError(index),
+          ])
+        );
         return [index, value("name", "_"), errors];
       }
 
@@ -210,14 +292,31 @@ export const parseValue =
       const token = str[index];
 
       if (!token) {
-        errors.push(error("unbalanced parens", position(start, index), _err));
+        const errs = [endOfTokensError(index)];
+        errors.push(error("unbalanced parens", position(start, index), errs));
+        errors.push(..._err);
       } else if (token.src !== ")") {
+        _err.push(
+          error(
+            `unexpected token: "${str[index].src}"`,
+            intervalPosition(index, 1)
+          )
+        );
         while (str[index] && str[index].src !== ")") index++;
 
         if (!str[index]) {
           _err.push(endOfTokensError(index));
           errors.push(error("unbalanced parens", position(start, index), _err));
-        } else errors.push(error("no closing parens", position(start, index), _err));
+        } else {
+          index++;
+          errors.push(
+            error(
+              "unexpected token inside parens",
+              position(start, index),
+              _err
+            )
+          );
+        }
       } else {
         errors = _err;
         index++;
@@ -232,7 +331,12 @@ export const parseValue =
     }
 
     if (token.type === "symbol") {
-      errors.push(error(`symbol can't be used in place of value`, intervalPosition(index, 1)));
+      errors.push(
+        error(
+          `symbol can't be used in place of value`,
+          intervalPosition(index, 1)
+        )
+      );
       return [index, value("name", "_"), errors];
     }
     return [index + 1, value("name", token.src), errors];

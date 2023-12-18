@@ -1,3 +1,5 @@
+import { error, indexPosition } from "./constructor";
+
 export function assert(condition: any, msg?: string): asserts condition {
   if (!condition) {
     throw new Error(msg ?? "assertion failed");
@@ -27,11 +29,17 @@ const getPrefix = (level: boolean, i: number, levels: boolean[]) => {
   const prefix = last ? (level ? " " : "│") : level ? "└" : "├";
   return prefix + _padding + " ";
 };
-type Tree = { name: string; children?: Tree[] };
-const printTree = ({ name, children = [] }: Tree, levels: boolean[] = []) => {
+export type Tree = { name: string; children?: Tree[] };
+export const printTree = (
+  { name, children = [] }: Tree,
+  levels: boolean[] = []
+) => {
   console.log(levels.map(getPrefix).join("") + name);
 
   children.forEach((child, i) =>
     printTree(child, [...levels, i === children.length - 1])
   );
 };
+
+export const endOfTokensError = (index: number) =>
+  error("end of tokens", indexPosition(index));

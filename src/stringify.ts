@@ -2,6 +2,7 @@ import {
   AccessExpression,
   Boolean,
   Expression,
+  Pow,
   Prefix,
   Product,
   Sum,
@@ -43,10 +44,19 @@ export const stringifySum = (item: Sum): string => {
 };
 export const stringifyProduct = (item: Product): string => {
   const [head, rest] = item;
-  const headStringified = stringifyValue(head);
+  const headStringified = stringifyPow(head);
   const restStringified = rest.reduce((acc, item) => {
-    // return acc + item.type + stringifyPrefix(item.item);
-    return acc + item.type + stringifyValue(item.item);
+    return acc + item.type + stringifyPow(item.item);
+    // return acc + item.type + stringifyValue(item.item);
+  }, "");
+  return headStringified + restStringified;
+};
+export const stringifyPow = (item: Pow): string => {
+  const [head, rest] = item;
+  const headStringified = stringifyPrefix(head);
+  const restStringified = rest.reduce((acc, item) => {
+    return acc + item.type + stringifyPrefix(item.item);
+    // return acc + item.type + stringifyValue(item.item);
   }, "");
   return headStringified + restStringified;
 };

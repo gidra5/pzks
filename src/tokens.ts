@@ -1,6 +1,8 @@
-import { ParsingError, StringParser, Token } from "./types";
+import { error, intervalPosition, position } from "./constructor";
+import { ParsingError, StringParser, Token, TokenPos } from "./types";
+import { endOfTokensError } from "./utils";
 
-export const parseToken: StringParser<Token> = (src, i = 0) => {
+export const parseToken: StringParser<TokenPos> = (src, i = 0) => {
   let index = i;
   const errors: ParsingError[] = [];
 
@@ -15,10 +17,9 @@ export const parseToken: StringParser<Token> = (src, i = 0) => {
       if (src.charAt(index) === "\\") index++;
 
       if (!src.charAt(index)) {
-        errors.push({
-          message: "unterminated string",
-          cause: [{ message: "end of text" }],
-        });
+        const pos = intervalPosition(start, index);
+        const errors = [endOfTokensError(index)];
+        errors.push(error(`unterminated string`, pos, errors));
         break;
       }
 
@@ -29,7 +30,12 @@ export const parseToken: StringParser<Token> = (src, i = 0) => {
 
     return [
       index,
-      { type: "string", src: src.substring(start, index), value },
+      {
+        type: "string",
+        src: src.substring(start, index),
+        value,
+        pos: position(start, index),
+      },
       errors,
     ];
   }
@@ -64,6 +70,7 @@ export const parseToken: StringParser<Token> = (src, i = 0) => {
         type: "number",
         src: src.substring(start, index),
         value: Number(value),
+        pos: position(start, index),
       },
       errors,
     ];
@@ -75,7 +82,11 @@ export const parseToken: StringParser<Token> = (src, i = 0) => {
 
     return [
       index,
-      { type: "identifier", src: src.substring(start, index) },
+      {
+        type: "identifier",
+        src: src.substring(start, index),
+        pos: position(start, index),
+      },
       errors,
     ];
   }
@@ -98,22 +109,31 @@ export const parseToken: StringParser<Token> = (src, i = 0) => {
         type: "number",
         src: src.substring(start, index),
         value: Number(value),
+        pos: position(start, index),
       },
       errors,
     ];
   }
 
   const start = index;
-  index++;
-  while (/[^_\w\s\d."\(\)\[\]\{\}\<\>;]/.test(src.charAt(index))) index++;
+  while (/[^_\w\s\d."\(\)\[\]\{\}\<\>;,]/.test(src.charAt(index))) index++;
+  if (start === index) index++;
 
-  return [index, { type: "symbol", src: src.substring(start, index) }, errors];
+  return [
+    index,
+    {
+      type: "symbol",
+      src: src.substring(start, index),
+      pos: position(start, index),
+    },
+    errors,
+  ];
 };
 
-export const parseTokens: StringParser<Token[], true> = (src, i = 0) => {
+export const parseTokens: StringParser<TokenPos[], true> = (src, i = 0) => {
   let index = i;
   const errors: ParsingError[] = [];
-  const tokens: Token[] = [];
+  const tokens: TokenPos[] = [];
 
   while (src.charAt(index)) {
     const [nextIndex, token, _errors] = parseToken(src, index);

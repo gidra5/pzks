@@ -42,5 +42,5 @@ if (interactive) {
 export const evalAccessStr = (str: string, ctx: Context) =>
   evalAccessExpr(parseAccessExpression(parseTokens(str)[0])[1], ctx);
 export const evalExprStr = (str: string, ctx: Context) => {
-  return evalExpr(parseExpr(parseTokens(str)[0])[1], ctx);
+  return evalExpr(parseExpr()(parseTokens(str)[0])[1], ctx);
 };
