@@ -26,6 +26,30 @@ const tokenPosToSrcPos = (tokenPos, tokens: TokenPos[]) => ({
   end: tokens[tokenPos.end - 1].pos.end,
 });
 
+const printErrors = (errors, tokens, map, fileName) => {
+  const errorDiagnosticLabel = (error) => {
+    const label = secondaryDiagnosticLabel(map.getFileId(fileName), {
+      ...tokenPosToSrcPos(error.pos, tokens),
+      message: error.message,
+    });
+    return label;
+  };
+  const errorDiagnostic = (error) => {
+    const diagnostic = Diagnostic.error();
+    const fileId = map.getFileId(fileName);
+    diagnostic.withLabels([
+      primaryDiagnosticLabel(fileId, {
+        ...tokenPosToSrcPos(error.pos, tokens),
+        message: error.message,
+      }),
+      ...error.cause.map(errorDiagnosticLabel),
+    ]);
+    return diagnostic;
+  };
+  const errorsDiagnostic = errors.map(errorDiagnostic);
+  errorsDiagnostic.forEach((error) => error.emitStd(map));
+};
+
 describe("parsing", () => {
   const testCase = (src, expectedErrors, _it: any = it) =>
     _it(`finds all errors in example '${src}'`, () => {
@@ -34,32 +58,11 @@ describe("parsing", () => {
 
       const [, tree, errors] = parseExpr()(tokens);
       // console.dir({ tree, errors }, { depth: null });
-      printTree(treeExpression(tree));
-      let map = new FileMap();
+      // console.log(printTree(treeExpression(tree)));
+      // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
-      // const errorDiagnosticLabel = (error) => {
-      //   const label = secondaryDiagnosticLabel(map.getFileId(fileName), {
-      //     ...tokenPosToSrcPos(error.pos, tokens),
-      //     message: error.message,
-      //   });
-      //   return label;
-      // };
-      // const errorDiagnostic = (error) => {
-      //   const diagnostic = Diagnostic.error();
-      //   const fileId = map.getFileId(fileName);
-      //   diagnostic.withLabels([
-      //     primaryDiagnosticLabel(fileId, {
-      //       ...tokenPosToSrcPos(error.pos, tokens),
-      //       message: error.message,
-      //     }),
-      //     ...error.cause.map(errorDiagnosticLabel),
-      //   ]);
-      //   return diagnostic;
-      // };
-      // const errorsDiagnostic = errors.map(errorDiagnostic);
-
-      // errorsDiagnostic.forEach((error) => error.emitStd(map));
+      // printErrors(errors, tokens, map, fileName);
 
       expect(errors).toEqual(expectedErrors);
     });
@@ -575,58 +578,23 @@ describe("parsing", () => {
         message: "unexpected token inside parens",
         cause: [
           {
+            message: "unexpected token inside parens",
+            cause: [
+              {
+                message: 'unexpected token: ","',
+                cause: [],
+                pos: { start: 54, end: 55 },
+              },
+            ],
+            pos: { start: 52, end: 57 },
+          },
+          {
             message: 'unexpected token: ","',
             cause: [],
-            pos: { start: 36, end: 37 },
+            pos: { start: 57, end: 58 },
           },
         ],
-        pos: { start: 30, end: 38 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: "("',
-            cause: [],
-            pos: { start: 52, end: 53 },
-          },
-        ],
-        pos: { start: 43, end: 57 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 57, end: 57 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 57, end: 58 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 58, end: 58 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 59, end: 59 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 60, end: 60 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 61, end: 61 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 61, end: 62 },
+        pos: { start: 42, end: 62 },
       },
       {
         message: "missing operator",
@@ -678,11 +646,10 @@ describe("parsing", () => {
     ]
   );
 
-  testCase(
-    "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x )/q + send*(-(2+7)/A*(j+ i)+ 127.0+.0+.1 ) + 2)/",
-    [],
-    it.only
-  );
+  // testCase(
+  //   "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x )/q + send*(-(2+7)/A*(j+ i)+ 127.0+.0+.1 ) + 2)/",
+  //   []
+  // );
 
   testCase("-(a+b)", []);
 

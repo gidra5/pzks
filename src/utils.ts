@@ -20,7 +20,7 @@ export function* groupBy<
   }
 }
 
-const padding = 1;
+const padding = 2;
 const getPrefix = (level: boolean, i: number, levels: boolean[]) => {
   const last = i < levels.length - 1;
   const _padding = Array(padding - 1)
@@ -33,12 +33,13 @@ export type Tree = { name: string; children?: Tree[] };
 export const printTree = (
   { name, children = [] }: Tree,
   levels: boolean[] = []
-) => {
-  console.log(levels.map(getPrefix).join("") + name);
+): string => {
+  let x = levels.map(getPrefix).join("") + name;
 
-  children.forEach((child, i) =>
-    printTree(child, [...levels, i === children.length - 1])
-  );
+  const rest = children
+    .map((child, i) => printTree(child, [...levels, i === children.length - 1]))
+    .join("");
+  return x + "\n" + rest;
 };
 
 export const endOfTokensError = (index: number) =>

@@ -41,39 +41,67 @@ export const treeBoolean = (item: Boolean): Tree => {
 };
 export const treeSum = (item: Sum): Tree => {
   const [head, rest] = item;
-  if (rest.length === 0) return treeProduct(head);
   const headTree = treeProduct(head);
-  const restTree = rest.map((item) => ({
-    ...treeProduct(item.item),
-    name: item.type,
-  }));
-  return { name: "sum", children: [headTree, ...restTree] };
+  const restTree = rest.reduce(
+    (acc, item) => ({
+      children: [acc, treeProduct(item.item)],
+      name: item.type,
+    }),
+    headTree
+  );
+  return restTree;
+  // if (rest.length === 0) return treeProduct(head);
+  // const headTree = treeProduct(head);
+  // const restTree = rest.map((item) => ({
+  //   ...treeProduct(item.item),
+  //   name: item.type,
+  // }));
+  // return { name: "sum", children: [headTree, ...restTree] };
 };
 export const treeProduct = (item: Product): Tree => {
   const [head, rest] = item;
-  if (rest.length === 0) return treePow(head);
   const headTree = treePow(head);
-  const restTree = rest.map((item) => ({
-    ...treePow(item.item),
-    name: item.type,
-  }));
-  return { name: "product", children: [headTree, ...restTree] };
+  const restTree = rest.reduce(
+    (acc, item) => ({
+      children: [acc, treePow(item.item)],
+      name: item.type,
+    }),
+    headTree
+  );
+  return restTree;
+  // if (rest.length === 0) return treePow(head);
+  // const headTree = treePow(head);
+  // const restTree = rest.map((item) => ({
+  //   ...treePow(item.item),
+  //   name: item.type,
+  // }));
+  // return { name: "product", children: [headTree, ...restTree] };
 };
 export const treePow = (item: Pow): Tree => {
   const [head, rest] = item;
-  if (rest.length === 0) return treePrefix(head);
   const headTree = treePrefix(head);
-  const restTree = rest.map((item) => ({
-    children: [treePrefix(item.item)],
-    name: item.type,
-  }));
-  return { name: "pow", children: [headTree, ...restTree] };
+  const restTree = rest.reduce(
+    (acc, item) => ({
+      children: [acc, treePrefix(item.item)],
+      name: item.type,
+    }),
+    headTree
+  );
+  return restTree;
+  // const [head, rest] = item;
+  // if (rest.length === 0) return treePrefix(head);
+  // const headTree = treePrefix(head);
+  // const restTree = rest.map((item) => ({
+  //   children: [treePrefix(item.item)],
+  //   name: item.type,
+  // }));
+  // return { name: "pow", children: [headTree, ...restTree] };
 };
 export const treePrefix = (item: Prefix): Tree => {
   const [value, operator] = item;
-  const valueStringified = treeValue(value);
-  if (operator) return { name: operator.type, children: [valueStringified] };
-  return valueStringified;
+  const valueTree = treeValue(value);
+  if (operator) return { name: operator.type, children: [valueTree] };
+  return valueTree;
 };
 export const treeValue = (item: Value): Tree => {
   if (item.type === "bool") return { name: item.item.toString() };
@@ -81,5 +109,5 @@ export const treeValue = (item: Value): Tree => {
   if (item.type === "str") return { name: `"${item.item}"` };
   // if (item.type === "name") return stringifyAccessExpression(item.item);
   if (item.type === "name") return { name: item.item };
-  return { name: "parens", children: [treeExpression(item.item)] };
+  return treeExpression(item.item);
 };
