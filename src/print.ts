@@ -82,7 +82,7 @@ export const treePow = (item: Pow): Tree => {
   const headTree = treePrefix(head);
   const restTree = rest.reduce(
     (acc, item) => ({
-      children: [acc, treePrefix(item.item)],
+      children: [treePrefix(item.item), acc],
       name: item.type,
     }),
     headTree
@@ -104,9 +104,9 @@ export const treePrefix = (item: Prefix): Tree => {
   return valueTree;
 };
 export const treeValue = (item: Value): Tree => {
-  if (item.type === "bool") return { name: item.item.toString() };
-  if (item.type === "num") return { name: item.item.toString() };
-  if (item.type === "str") return { name: `"${item.item}"` };
+  if (item.type === "bool") return { name: item.item.toString(), type: "bool" };
+  if (item.type === "num") return { name: item.item.toString(), type: "num" };
+  if (item.type === "str") return { name: `"${item.item}"`, type: "str" };
   // if (item.type === "name") return stringifyAccessExpression(item.item);
   if (item.type === "name") return { name: item.item };
   return treeExpression(item.item);

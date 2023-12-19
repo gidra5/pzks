@@ -116,7 +116,7 @@ export const parseToken: StringParser<TokenPos> = (src, i = 0) => {
   }
 
   const start = index;
-  while (/[^_\w\s\d."\(\)\[\]\{\}\<\>;,]/.test(src.charAt(index))) index++;
+  while (/[^_\w\s\d."\(\)\[\]\{\}\<\>;,\-]/.test(src.charAt(index))) index++;
   if (start === index) index++;
 
   return [

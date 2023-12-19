@@ -2,16 +2,6 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { parseExpr } from "../src/parser.js";
 import { parseTokens } from "../src/tokens.js";
-import { treeExpression } from "../src/print.js";
-import { printTree } from "../src/utils.js";
-import {
-  Diagnostic,
-  FileMap,
-  primaryDiagnosticLabel,
-  secondaryDiagnosticLabel,
-} from "codespan-napi";
-import { TokenPos } from "../src/types.js";
-
 /* 
   Перевіряє, що вираз відповідає наступним вимогам:
   •	помилки на початку арифметичного виразу ( наприклад, вираз не може починатись із закритої дужки, алгебраїчних операцій * та /);
@@ -20,35 +10,6 @@ import { TokenPos } from "../src/types.js";
   •	помилки в середині виразу (подвійні операції, відсутність операцій перед або між дужками, операції* або / після відкритої дужки тощо);
   •	помилки, пов’язані з використанням дужок ( нерівна кількість відкритих та закритих дужок, неправильний порядок дужок, пусті дужки).
 */
-
-const tokenPosToSrcPos = (tokenPos, tokens: TokenPos[]) => ({
-  start: tokens[tokenPos.start].pos.start,
-  end: tokens[tokenPos.end - 1].pos.end,
-});
-
-const printErrors = (errors, tokens, map, fileName) => {
-  const errorDiagnosticLabel = (error) => {
-    const label = secondaryDiagnosticLabel(map.getFileId(fileName), {
-      ...tokenPosToSrcPos(error.pos, tokens),
-      message: error.message,
-    });
-    return label;
-  };
-  const errorDiagnostic = (error) => {
-    const diagnostic = Diagnostic.error();
-    const fileId = map.getFileId(fileName);
-    diagnostic.withLabels([
-      primaryDiagnosticLabel(fileId, {
-        ...tokenPosToSrcPos(error.pos, tokens),
-        message: error.message,
-      }),
-      ...error.cause.map(errorDiagnosticLabel),
-    ]);
-    return diagnostic;
-  };
-  const errorsDiagnostic = errors.map(errorDiagnostic);
-  errorsDiagnostic.forEach((error) => error.emitStd(map));
-};
 
 describe("parsing", () => {
   const testCase = (src, expectedErrors, _it: any = it) =>
