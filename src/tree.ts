@@ -25,7 +25,6 @@ export const treeToken = (item: Token): Tree => {
 
 export const treeExpression = (item: Expression): Tree => {
   return treeSum(item);
-  // return stringifyBoolean(item);
 };
 
 export const treeBoolean = (item: Boolean): Tree => {
@@ -49,13 +48,6 @@ export const treeSum = (item: Sum): Tree => {
     headTree
   );
   return restTree;
-  // if (rest.length === 0) return treeProduct(head);
-  // const headTree = treeProduct(head);
-  // const restTree = rest.map((item) => ({
-  //   ...treeProduct(item.item),
-  //   name: item.type,
-  // }));
-  // return { name: "sum", children: [headTree, ...restTree] };
 };
 export const treeProduct = (item: Product): Tree => {
   const [head, rest] = item;
@@ -68,13 +60,6 @@ export const treeProduct = (item: Product): Tree => {
     headTree
   );
   return restTree;
-  // if (rest.length === 0) return treePow(head);
-  // const headTree = treePow(head);
-  // const restTree = rest.map((item) => ({
-  //   ...treePow(item.item),
-  //   name: item.type,
-  // }));
-  // return { name: "product", children: [headTree, ...restTree] };
 };
 export const treePow = (item: Pow): Tree => {
   const [head, rest] = item;
@@ -87,23 +72,12 @@ export const treePow = (item: Pow): Tree => {
     headTree
   );
   return restTree;
-  // const [head, rest] = item;
-  // if (rest.length === 0) return treePrefix(head);
-  // const headTree = treePrefix(head);
-  // const restTree = rest.map((item) => ({
-  //   children: [treePrefix(item.item)],
-  //   name: item.type,
-  // }));
-  // return { name: "pow", children: [headTree, ...restTree] };
 };
 export const treePrefix = (item: Prefix): Tree => {
   const [value, operator] = item;
   const valueTree = treeValue(value);
   if (operator.length > 0) {
-    return operator.reduce(
-      (acc, item) => ({ children: [acc], name: item }),
-      valueTree
-    );
+    return operator.reduce((acc, item) => ({ children: [acc], name: item }), valueTree);
   }
   return valueTree;
 };
@@ -112,8 +86,16 @@ export const treeValue = (item: Value): Tree => {
   if (item.type === "num") return { name: item.item.toString(), type: "num" };
   if (item.type === "str") return { name: `"${item.item}"`, type: "str" };
   // if (item.type === "name") return stringifyAccessExpression(item.item);
-  if (item.type === "name") return { name: item.item };
-  if (item.type === "fn")
-    return { name: item.item[0], children: item.item[1].map(treeExpression) };
+  if (item.type === "name") return { name: item.item, type: "name" };
+  if (item.type === "fn") return { name: item.item[0], children: item.item[1].map(treeExpression), type: "fn" };
   return treeExpression(item.item);
+};
+
+export const treeCost = (item: Tree, costTable: Record<string, number> = {}): number => {
+  if (!item.children) return 1;
+  if (item.children.length === 0) return 1;
+
+  const name = item.name;
+  const cost = costTable[name] || 1;
+  return cost + item.children.reduce((acc, item) => acc + treeCost(item, costTable), 0);
 };

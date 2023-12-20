@@ -1,5 +1,5 @@
 import { parseExpr } from "./parser.js";
-import { treeExpression } from "./tree.js";
+import { treeCost, treeExpression } from "./tree.js";
 import { parseTokens } from "./tokens.js";
 import type { Tree } from "./utils";
 
@@ -19,8 +19,7 @@ export const treeOptimizer = (item: Tree): [Tree, boolean] => {
 export const treeOptimizerStep = (item: Tree): Tree => {
   if (patternMatcher("_ + (_ - _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -37,8 +36,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("_ - (_ + _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -55,8 +53,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("_ - (_ - _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -71,13 +68,9 @@ export const treeOptimizerStep = (item: Tree): Tree => {
       };
   }
 
-  if (
-    patternMatcher("_ + (_ + _)", item) ||
-    patternMatcher("_ * (_ * _)", item)
-  ) {
+  if (patternMatcher("_ + (_ + _)", item) || patternMatcher("_ * (_ * _)", item)) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -92,10 +85,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
       };
   }
 
-  if (
-    patternMatcher("(_ + _) + _", item) ||
-    patternMatcher("(_ * _) * _", item)
-  ) {
+  if (patternMatcher("(_ + _) + _", item) || patternMatcher("(_ * _) * _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
     const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
 
@@ -180,6 +170,19 @@ export const treeOptimizerStep = (item: Tree): Tree => {
       };
   }
 
+  if (patternMatcher("-(-_)", item)) {
+    const [{ children: [a] = [] }] = item.children!;
+    return a;
+  }
+
+  if (patternMatcher("_-(-_)", item)) {
+    const [a, { children: [b] = [] }] = item.children!;
+    return {
+      name: "+",
+      children: [a, b],
+    };
+  }
+
   if (patternMatcher("0+_", item)) {
     return item.children![1];
   }
@@ -192,11 +195,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   if (patternMatcher("_-0", item)) {
     return item.children![0];
   }
-  if (
-    patternMatcher("0*_", item) ||
-    patternMatcher("_*0", item) ||
-    patternMatcher("0/_", item)
-  ) {
+  if (patternMatcher("0*_", item) || patternMatcher("_*0", item) || patternMatcher("0/_", item)) {
     return { name: "0" };
   }
   if (patternMatcher("_/0", item)) {
@@ -220,46 +219,63 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     return item.children![0];
   }
 
-  if (
-    patternMatcher("_ - _", item) &&
-    treeMatcher(item.children![0], item.children![1])[0]
-  ) {
+  if (patternMatcher("_ - _", item) && treeMatcher(item.children![0], item.children![1])[0]) {
     return { name: "0" };
   }
 
-  if (
-    item.children &&
-    item.children.filter(({ type }) => type === "num").length > 1
-  ) {
+  if (patternMatcher("_ / _", item) && treeMatcher(item.children![0], item.children![1])[0]) {
+    return { name: "1" };
+  }
+
+  if (item.children && item.children.filter(({ type }) => type === "num").length > 1) {
     const op = item.name;
 
     if (op === "+") {
-      const value =
-        Number(item.children![0].name) + Number(item.children![1].name);
+      const value = Number(item.children![0].name) + Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "-") {
-      const value =
-        Number(item.children![0].name) - Number(item.children![1].name);
+      const value = Number(item.children![0].name) - Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "*") {
-      const value =
-        Number(item.children![0].name) * Number(item.children![1].name);
+      const value = Number(item.children![0].name) * Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "/") {
-      const value =
-        Number(item.children![0].name) / Number(item.children![1].name);
+      const value = Number(item.children![0].name) / Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "^") {
-      const value = Math.pow(
-        Number(item.children![0].name),
-        Number(item.children![1].name)
-      );
+      const value = Math.pow(Number(item.children![0].name), Number(item.children![1].name));
       return { name: `${value}`, type: "num" };
     }
+  }
+
+  if (patternMatcher("_ + _", item)) {
+    const [a, b] = item.children!;
+    if (treeCost(a) > treeCost(b)) return { ...item, children: [b, a] };
+  }
+
+  if (patternMatcher("(_ - _) - _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    if (treeCost(b) > treeCost(c)) return { name: "-", children: [{ name: "-", children: [a, c] }, b] };
+  }
+
+  if (patternMatcher("_ * _", item)) {
+    const [a, b] = item.children!;
+    if (treeCost(a) > treeCost(b)) return { ...item, children: [b, a] };
+  }
+
+  if (patternMatcher("_ * (_ + _)", item)) {
+    const [a, { children: [b, c] = [] }] = item.children!;
+    return {
+      name: "+",
+      children: [
+        { name: "*", children: [a, b] },
+        { name: "*", children: [a, c] },
+      ],
+    };
   }
 
   if (item.children && item.children.length > 0) {
