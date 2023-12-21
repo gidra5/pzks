@@ -2,7 +2,7 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { parseExpr } from "../src/parser.js";
 import { parseTokens } from "../src/tokens.js";
-import { treeExpression } from "../src/print.js";
+import { treeExpression } from "../src/tree.js";
 import { printTree } from "../src/utils.js";
 import { treeOptimizer } from "../src/optimizer.js";
 

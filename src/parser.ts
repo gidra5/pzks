@@ -7,8 +7,8 @@ import {
   token,
   prefix,
   pow,
-} from "./constructor";
-import {
+} from "./constructor.js";
+import type {
   AccessExpression,
   Expression,
   Sum,
@@ -16,12 +16,12 @@ import {
   Value,
   TokenParser,
   ParsingError,
-  PREFIX_OPS,
   PrefixOp,
   Prefix,
   Pow,
 } from "./types";
-import { endOfTokensError } from "./utils";
+import { PREFIX_OPS } from "./types.js";
+import { endOfTokensError } from "./utils.js";
 
 export const parseAccessExpression: TokenParser<AccessExpression> = (
   str,
@@ -151,7 +151,7 @@ export const parseSum =
 
       rest.push({ type: _token.src as "+" | "-", item: restProduct });
       if (i !== index) index = i;
-      else index++;
+      else break;
     }
 
     return [index, [_product, rest], errors];
@@ -237,17 +237,26 @@ export const parsePow =
 export const parsePrefix =
   (parens = 0): TokenParser<Prefix> =>
   (str, index = 0) => {
-    const token = str[index];
-    let rest: Prefix[1];
-    if (
-      (token.type === "identifier" || token.type === "symbol") &&
-      token.src in PREFIX_OPS
+    const rest: Prefix[1] = [];
+    while (
+      (str[index].type === "identifier" || str[index].type === "symbol") &&
+      str[index].src in PREFIX_OPS
     ) {
-      rest = { type: PREFIX_OPS[token.src as PrefixOp] };
+      rest.push(PREFIX_OPS[str[index].src as PrefixOp]);
       index++;
     }
     const [i, value, errors] = parseValue(parens)(str, index);
     index = i;
+
+    if (parens === 0 && str[index]?.src === ")") {
+      errors.push(
+        error(
+          `unexpected closing parenthesis after value`,
+          intervalPosition(index, 1)
+        )
+      );
+      index++;
+    }
 
     return [index, [value, rest], errors];
   };
@@ -270,6 +279,16 @@ export const parseValue =
     if (token.src === "(" && str[index + 1]?.src === ")") {
       errors.push(error(`empty parenthesis`, intervalPosition(index, 2)));
       return [index + 2, value("name", "_"), errors];
+    }
+
+    if (parens === 0 && token.src === ")") {
+      errors.push(
+        error(
+          `unexpected closing parenthesis, expected value`,
+          intervalPosition(index, 1)
+        )
+      );
+      return [index + 1, value("name", "_"), errors];
     }
 
     if (token.src === "(") {
@@ -330,6 +349,68 @@ export const parseValue =
       return [index, value("expr", expr), errors];
     }
 
+    if (token.type === "identifier" && str[index + 1]?.src === "(") {
+      const start = index;
+      const name = token.src;
+      const args: Expression[] = [];
+
+      index += 2;
+      {
+        const start = index;
+        const [i, expr, _err] = parseExpr(parens + 1)(str, index);
+        index = i;
+        args.push(expr);
+        if (_err.length > 0) {
+          errors.push(
+            error(
+              "unexpected token inside fn args",
+              position(start, index),
+              _err
+            )
+          );
+        }
+      }
+
+      while (str[index] && str[index].src !== ")") {
+        if (str[index].src !== ",") {
+          errors.push(
+            error(
+              "expected comma or closing parens",
+              intervalPosition(index, 1)
+            )
+          );
+          while (str[index] && str[index].src !== ")" && str[index].src !== ",")
+            index++;
+          continue;
+        }
+        index++;
+
+        const start = index;
+
+        const [i, expr, _err] = parseExpr(parens + 1)(str, index);
+        index = i;
+        args.push(expr);
+        if (_err.length > 0) {
+          errors.push(
+            error(
+              "unexpected token inside fn args",
+              position(start, index),
+              _err
+            )
+          );
+        }
+      }
+
+      if (!str[index]) {
+        const errs = [endOfTokensError(index)];
+        errors.push(error("unbalanced parens", position(start, index), errs));
+      } else {
+        index++;
+      }
+
+      return [index, value("fn", [name, args]), errors];
+    }
+
     if (token.type === "symbol") {
       errors.push(
         error(
@@ -339,6 +420,7 @@ export const parseValue =
       );
       return [index, value("name", "_"), errors];
     }
+
     return [index + 1, value("name", token.src), errors];
 
     // const [i, expr, _err] = parseAccessExpression(str, index);

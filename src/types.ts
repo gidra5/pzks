@@ -87,18 +87,14 @@ export type Boolean = [Sum, { type: BooleanOp; item: Sum }[]];
 export type Sum = [Product, { type: "+" | "-"; item: Product }[]];
 export type Product = [Pow, { type: "*" | "/"; item: Pow }[]];
 export type Pow = [Prefix, { type: "^"; item: Prefix }[]];
-export type Prefix = [
-  value: Value,
-  operator?: {
-    type: (typeof PREFIX_OPS)[PrefixOp];
-  }
-];
+export type Prefix = [value: Value, operators: (typeof PREFIX_OPS)[PrefixOp][]];
 export type Value = TaggedItemUnion<{
   num: number;
   bool: boolean;
   str: string;
   name: string;
   expr: Expression;
+  fn: [string, Expression[]];
 }>;
 export type EvalValue = number | boolean | string;
 

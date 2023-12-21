@@ -2,6 +2,7 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { parseExpr } from "../src/parser.js";
 import { parseTokens } from "../src/tokens.js";
+
 /* 
   Перевіряє, що вираз відповідає наступним вимогам:
   •	помилки на початку арифметичного виразу ( наприклад, вираз не може починатись із закритої дужки, алгебраїчних операцій * та /);
@@ -38,7 +39,7 @@ describe("parsing", () => {
 
   testCase(")", [
     {
-      message: "symbol can't be used in place of value",
+      message: "unexpected closing parenthesis, expected value",
       cause: [],
       pos: { start: 0, end: 1 },
     },
@@ -173,6 +174,49 @@ describe("parsing", () => {
     },
   ]);
 
+  testCase(" q + )/", [
+    {
+      message: "unexpected closing parenthesis, expected value",
+      cause: [],
+      pos: { start: 2, end: 3 },
+    },
+    {
+      message: "missing operand",
+      cause: [
+        {
+          message: "end of tokens",
+          cause: [],
+          pos: { start: 4, end: 4 },
+        },
+      ],
+      pos: { start: 3, end: 4 },
+    },
+  ]);
+
+  testCase(" - )/q + )/", [
+    {
+      message: "unexpected closing parenthesis, expected value",
+      cause: [],
+      pos: { start: 1, end: 2 },
+    },
+    {
+      message: "unexpected closing parenthesis, expected value",
+      cause: [],
+      pos: { start: 5, end: 6 },
+    },
+    {
+      message: "missing operand",
+      cause: [
+        {
+          message: "end of tokens",
+          cause: [],
+          pos: { start: 7, end: 7 },
+        },
+      ],
+      pos: { start: 6, end: 7 },
+    },
+  ]);
+
   testCase("1 * (5/3) (*4", [
     {
       message: "missing operator",
@@ -221,6 +265,155 @@ describe("parsing", () => {
     },
   ]);
 
+  testCase("send((1+2), 3)", []);
+  testCase("send((1+2), 3+,4)", [
+    {
+      message: "unexpected token inside fn args",
+      cause: [
+        {
+          message: "symbol can't be used in place of value",
+          cause: [],
+          pos: { start: 10, end: 11 },
+        },
+      ],
+      pos: { start: 8, end: 10 },
+    },
+  ]);
+  testCase("send([j, i])", [
+    {
+      message: "unexpected token inside fn args",
+      cause: [
+        {
+          message: "symbol can't be used in place of value",
+          cause: [],
+          pos: { start: 2, end: 3 },
+        },
+      ],
+      pos: { start: 2, end: 2 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 2, end: 3 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 6, end: 7 },
+    },
+  ]);
+  testCase("send(2, 3)", []);
+  testCase("--i", []);
+  testCase("send(-(2x+7)/A[j, i], 127.0.0.1)", [
+    {
+      message: "unexpected token inside fn args",
+      cause: [
+        {
+          message: "unexpected token inside parens",
+          cause: [
+            {
+              message: 'unexpected token: "x"',
+              cause: [],
+              pos: { start: 5, end: 6 },
+            },
+          ],
+          pos: { start: 3, end: 9 },
+        },
+      ],
+      pos: { start: 2, end: 11 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 11, end: 12 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 15, end: 16 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 18, end: 19 },
+    },
+  ]);
+  testCase("send(-(2x+7)/A[j, i], 127.0.0.1 ) + )/", [
+    {
+      message: "unexpected token inside fn args",
+      cause: [
+        {
+          message: "unexpected token inside parens",
+          cause: [
+            {
+              message: 'unexpected token: "x"',
+              cause: [],
+              pos: { start: 5, end: 6 },
+            },
+          ],
+          pos: { start: 3, end: 9 },
+        },
+      ],
+      pos: { start: 2, end: 11 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 11, end: 12 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 15, end: 16 },
+    },
+    {
+      message: "expected comma or closing parens",
+      cause: [],
+      pos: { start: 18, end: 19 },
+    },
+    {
+      message: "unexpected closing parenthesis, expected value",
+      cause: [],
+      pos: { start: 22, end: 23 },
+    },
+    {
+      message: "missing operand",
+      cause: [
+        {
+          message: "end of tokens",
+          cause: [],
+          pos: { start: 24, end: 24 },
+        },
+      ],
+      pos: { start: 23, end: 24 },
+    },
+  ]);
+  testCase("1 - 1)*1", [
+    {
+      message: "unexpected closing parenthesis after value",
+      cause: [],
+      pos: { start: 3, end: 4 },
+    },
+  ]);
+  testCase("1 - 1)*1+", [
+    {
+      message: "unexpected closing parenthesis after value",
+      cause: [],
+      pos: { start: 3, end: 4 },
+    },
+    {
+      message: "missing operand",
+      cause: [
+        {
+          message: "end of tokens",
+          cause: [],
+          pos: { start: 7, end: 7 },
+        },
+      ],
+      pos: { start: 6, end: 7 },
+    },
+  ]);
+
   testCase(
     "(2x^2-5x+7)-(-i)+ (j++)/0 - )(*f)(2, 7-x, )/q + send(-(2x+7)/A[j, i], 127.0.0.1 ) + )/",
     [
@@ -247,7 +440,7 @@ describe("parsing", () => {
         pos: { start: 17, end: 21 },
       },
       {
-        message: "symbol can't be used in place of value",
+        message: "unexpected closing parenthesis, expected value",
         cause: [],
         pos: { start: 24, end: 25 },
       },
@@ -278,12 +471,7 @@ describe("parsing", () => {
         pos: { start: 29, end: 37 },
       },
       {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 41, end: 41 },
-      },
-      {
-        message: "unexpected token inside parens",
+        message: "unexpected token inside fn args",
         cause: [
           {
             message: "unexpected token inside parens",
@@ -296,321 +484,106 @@ describe("parsing", () => {
             ],
             pos: { start: 43, end: 49 },
           },
-          {
-            message: 'unexpected token: "["',
-            cause: [],
-            pos: { start: 51, end: 52 },
-          },
         ],
-        pos: { start: 41, end: 61 },
+        pos: { start: 42, end: 51 },
       },
       {
-        message: "symbol can't be used in place of value",
+        message: "expected comma or closing parens",
+        cause: [],
+        pos: { start: 51, end: 52 },
+      },
+      {
+        message: "expected comma or closing parens",
+        cause: [],
+        pos: { start: 55, end: 56 },
+      },
+      {
+        message: "expected comma or closing parens",
+        cause: [],
+        pos: { start: 58, end: 59 },
+      },
+      {
+        message: "unexpected closing parenthesis, expected value",
         cause: [],
         pos: { start: 62, end: 63 },
       },
-    ]
-  );
-
-  testCase(
-    "(2^2-5+7)-(-i)+ (j++)/0 - )(*f)(2, 7-x, )/q + send(-(2+7)/A[j, i], 127.0.0.1 ) + )/",
-    [
       {
-        message: "unexpected token inside parens",
+        message: "missing operand",
         cause: [
           {
-            message: 'unexpected token: "++"',
+            message: "end of tokens",
             cause: [],
-            pos: { start: 17, end: 18 },
+            pos: { start: 64, end: 64 },
           },
         ],
-        pos: { start: 15, end: 19 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 22, end: 23 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 23, end: 23 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 24, end: 25 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 27, end: 27 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: ","',
-            cause: [],
-            pos: { start: 29, end: 30 },
-          },
-        ],
-        pos: { start: 27, end: 35 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 39, end: 39 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: "["',
-            cause: [],
-            pos: { start: 48, end: 49 },
-          },
-        ],
-        pos: { start: 39, end: 58 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 59, end: 60 },
+        pos: { start: 63, end: 64 },
       },
     ]
   );
 
   testCase(
-    "(2^2-5+7)-(-i)+ (j)/0 - )(*f)(2, 7-x, )/q + send(-(2+7)/A[j, i], 127.0.0.1 ) + )/",
+    "(2^2-5x+7)-(-i)+ (j)/0 - 1)*(1*f)+(27-x, )/q + send(-(2+7)/A,[j, i, 127.0.1 ) + 1)/1",
     [
       {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 21, end: 22 },
+        message: "unexpected token inside parens",
+        cause: [
+          {
+            message: 'unexpected token: "x"',
+            cause: [],
+            pos: { start: 6, end: 7 },
+          },
+        ],
+        pos: { start: 0, end: 10 },
       },
       {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 22, end: 22 },
-      },
-      {
-        message: "symbol can't be used in place of value",
+        message: "unexpected closing parenthesis after value",
         cause: [],
         pos: { start: 23, end: 24 },
       },
       {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 26, end: 26 },
-      },
-      {
         message: "unexpected token inside parens",
         cause: [
           {
             message: 'unexpected token: ","',
             cause: [],
-            pos: { start: 28, end: 29 },
+            pos: { start: 35, end: 36 },
           },
         ],
-        pos: { start: 26, end: 34 },
+        pos: { start: 31, end: 37 },
       },
       {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 38, end: 38 },
-      },
-      {
-        message: "unexpected token inside parens",
+        message: "unexpected token inside fn args",
         cause: [
           {
-            message: 'unexpected token: "["',
+            message: "symbol can't be used in place of value",
             cause: [],
-            pos: { start: 47, end: 48 },
+            pos: { start: 51, end: 52 },
           },
         ],
-        pos: { start: 38, end: 57 },
+        pos: { start: 51, end: 51 },
       },
       {
-        message: "symbol can't be used in place of value",
+        message: "expected comma or closing parens",
         cause: [],
-        pos: { start: 58, end: 59 },
-      },
-    ]
-  );
-
-  testCase(
-    "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x, )/q + send*(-(2+7)/A(j, i), 127.0.0.1 ) + 2)/",
-    [
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 22, end: 22 },
+        pos: { start: 51, end: 52 },
       },
       {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 22, end: 23 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: ","',
-            cause: [],
-            pos: { start: 36, end: 37 },
-          },
-        ],
-        pos: { start: 30, end: 38 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: "("',
-            cause: [],
-            pos: { start: 52, end: 53 },
-          },
-        ],
-        pos: { start: 43, end: 57 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 57, end: 57 },
-      },
-      {
-        message: "symbol can't be used in place of value",
+        message: "expected comma or closing parens",
         cause: [],
         pos: { start: 57, end: 58 },
       },
       {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 58, end: 58 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 59, end: 59 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 60, end: 60 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 61, end: 61 },
-      },
-      {
-        message: "symbol can't be used in place of value",
+        message: "unexpected closing parenthesis after value",
         cause: [],
         pos: { start: 61, end: 62 },
       },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 64, end: 64 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 64, end: 65 },
-      },
     ]
   );
 
   testCase(
-    "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x )/q + send*(-(2+7)/A*(j, i), 127.0.0.1 ) + 2)/",
-    [
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 22, end: 22 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 22, end: 23 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: "unexpected token inside parens",
-            cause: [
-              {
-                message: 'unexpected token: ","',
-                cause: [],
-                pos: { start: 54, end: 55 },
-              },
-            ],
-            pos: { start: 52, end: 57 },
-          },
-          {
-            message: 'unexpected token: ","',
-            cause: [],
-            pos: { start: 57, end: 58 },
-          },
-        ],
-        pos: { start: 42, end: 62 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 64, end: 64 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 64, end: 65 },
-      },
-    ]
+    "(2^2-5+7)-(-i)+ (j)/0 - 1*(1*f)+(27-x )/q + send(-(2+7)/A,j, i, 127.0 ) + 1/1",
+    []
   );
-
-  testCase(
-    "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x )/q + send*(-(2+7)/A*(j+ i)+ 127.0.0.1 ) + 2)/",
-    [
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 22, end: 22 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 22, end: 23 },
-      },
-      {
-        message: "unexpected token inside parens",
-        cause: [
-          {
-            message: 'unexpected token: ".0"',
-            cause: [],
-            pos: { start: 59, end: 60 },
-          },
-        ],
-        pos: { start: 42, end: 62 },
-      },
-      {
-        message: "missing operator",
-        cause: [],
-        pos: { start: 64, end: 64 },
-      },
-      {
-        message: "symbol can't be used in place of value",
-        cause: [],
-        pos: { start: 64, end: 65 },
-      },
-    ]
-  );
-
-  // testCase(
-  //   "(2^2-5+7)-(-i)+ (j)/0 - 1)+(1*f)*(2+ 7-x )/q + send*(-(2+7)/A*(j+ i)+ 127.0+.0+.1 ) + 2)/",
-  //   []
-  // );
 
   testCase("-(a+b)", []);
 
@@ -636,16 +609,6 @@ describe("parsing", () => {
       cause: [],
       pos: { start: 4, end: 5 },
     },
-    {
-      message: "missing operator",
-      cause: [],
-      pos: { start: 5, end: 5 },
-    },
-    {
-      message: "symbol can't be used in place of value",
-      cause: [],
-      pos: { start: 5, end: 6 },
-    },
   ]);
 
   testCase("(,) + a", [
@@ -664,25 +627,6 @@ describe("parsing", () => {
         },
       ],
       pos: { start: 0, end: 3 },
-    },
-  ]);
-
-  testCase("f(a,b )", [
-    {
-      message: "missing operator",
-      cause: [],
-      pos: { start: 1, end: 1 },
-    },
-    {
-      message: "unexpected token inside parens",
-      cause: [
-        {
-          message: 'unexpected token: ","',
-          cause: [],
-          pos: { start: 3, end: 4 },
-        },
-      ],
-      pos: { start: 1, end: 6 },
     },
   ]);
 });

@@ -1,7 +1,7 @@
-import { parseExpr } from "./parser";
-import { treeExpression } from "./print";
-import { parseTokens } from "./tokens";
-import { Tree } from "./utils";
+import { parseExpr } from "./parser.js";
+import { treeExpression } from "./tree.js";
+import { parseTokens } from "./tokens.js";
+import type { Tree } from "./utils";
 
 export const treeOptimizer = (item: Tree): [Tree, boolean] => {
   let i = 0;

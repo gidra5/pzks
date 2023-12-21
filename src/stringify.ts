@@ -1,4 +1,4 @@
-import {
+import type {
   AccessExpression,
   Boolean,
   Expression,
@@ -63,7 +63,11 @@ export const stringifyPow = (item: Pow): string => {
 export const stringifyPrefix = (item: Prefix): string => {
   const [value, operator] = item;
   const valueStringified = stringifyValue(value);
-  if (operator) return operator.type + valueStringified;
+  if (operator.length > 0)
+    return (
+      operator.map((item) => (item === "neg" ? "-" : "")).join("") +
+      valueStringified
+    );
   return valueStringified;
 };
 export const stringifyValue = (item: Value): string => {
@@ -72,5 +76,9 @@ export const stringifyValue = (item: Value): string => {
   if (item.type === "str") return `"${item.item}"`;
   // if (item.type === "name") return stringifyAccessExpression(item.item);
   if (item.type === "name") return item.item;
+  if (item.type === "fn")
+    return (
+      item.item[0] + `(${item.item[1].map(stringifyExpression).join(",")})`
+    );
   return `(${stringifyExpression(item.item)})`;
 };

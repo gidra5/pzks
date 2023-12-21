@@ -1,4 +1,4 @@
-import {
+import type {
   AccessExpression,
   Boolean,
   Expression,
@@ -67,10 +67,8 @@ export const pow = (
   ...rest: [type: Pow[1][number]["type"], item: Pow[1][number]["item"]][]
 ) => [head, rest.map(([type, item]) => ({ type, item }))] as Pow;
 
-export const prefix = (
-  value: Prefix[0],
-  operatorType?: NonNullable<Prefix[1]>["type"]
-) => [value, ...(operatorType ? [{ type: operatorType }] : [])] as Prefix;
+export const prefix = (value: Prefix[0], ...operatorTypes: Prefix[1]) =>
+  [value, operatorTypes] as Prefix;
 
 export const value = (type: Value["type"], item: Value["item"]) =>
   ({ type, item } as Value);

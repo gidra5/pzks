@@ -3,7 +3,7 @@ import {
   primaryDiagnosticLabel,
   secondaryDiagnosticLabel,
 } from "codespan-napi";
-import { error, indexPosition } from "./constructor";
+import { error, indexPosition } from "./constructor.js";
 
 export function assert(condition: any, msg?: string): asserts condition {
   if (!condition) {
@@ -52,13 +52,54 @@ export const endOfTokensError = (index: number) =>
 
 import { TokenPos } from "../src/types.js";
 
-const tokenPosToSrcPos = (tokenPos, tokens: TokenPos[]) => ({
-  start: tokens[tokenPos.start].pos.start,
-  end: tokens[tokenPos.end - 1].pos.end,
-});
+const tokenPosToSrcPos = (tokenPos, tokens: TokenPos[]) => {
+  let startTokenIndex = tokenPos.start;
+  if (!tokens[startTokenIndex]) {
+    startTokenIndex = tokens.length - 1;
+  }
+  let endTokenIndex = Math.max(tokenPos.end - 1, startTokenIndex);
+  if (!tokens[endTokenIndex]) {
+    endTokenIndex = tokens.length - 1;
+  }
 
-const printErrors = (errors, tokens, map, fileName) => {
+  return {
+    start: tokens[startTokenIndex].pos.start,
+    end: tokens[endTokenIndex].pos.end,
+  };
+};
+
+export const printTokenErrors = (errors, map, fileName) => {
   const errorDiagnosticLabel = (error) => {
+    if (error.cause.length > 0)
+      return error.cause.flatMap(errorDiagnosticLabel);
+
+    const label = secondaryDiagnosticLabel(map.getFileId(fileName), {
+      ...error.pos,
+      message: error.message,
+    });
+    return label;
+  };
+  const errorDiagnostic = (error) => {
+    const diagnostic = Diagnostic.error();
+    const fileId = map.getFileId(fileName);
+    diagnostic.withLabels([
+      primaryDiagnosticLabel(fileId, {
+        ...error.pos,
+        message: error.message,
+      }),
+      ...error.cause.flatMap(errorDiagnosticLabel),
+    ]);
+    return diagnostic;
+  };
+  const errorsDiagnostic = errors.map(errorDiagnostic);
+  errorsDiagnostic.forEach((error) => error.emitStd(map));
+};
+
+export const printErrors = (errors, tokens, map, fileName) => {
+  const errorDiagnosticLabel = (error) => {
+    if (error.cause.length > 0)
+      return error.cause.flatMap(errorDiagnosticLabel);
+
     const label = secondaryDiagnosticLabel(map.getFileId(fileName), {
       ...tokenPosToSrcPos(error.pos, tokens),
       message: error.message,
@@ -73,7 +114,7 @@ const printErrors = (errors, tokens, map, fileName) => {
         ...tokenPosToSrcPos(error.pos, tokens),
         message: error.message,
       }),
-      ...error.cause.map(errorDiagnosticLabel),
+      ...error.cause.flatMap(errorDiagnosticLabel),
     ]);
     return diagnostic;
   };

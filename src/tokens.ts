@@ -1,6 +1,6 @@
-import { error, intervalPosition, position } from "./constructor";
-import { ParsingError, StringParser, Token, TokenPos } from "./types";
-import { endOfTokensError } from "./utils";
+import { error, intervalPosition, position } from "./constructor.js";
+import type { ParsingError, StringParser, TokenPos } from "./types";
+import { endOfTokensError } from "./utils.js";
 
 export const parseToken: StringParser<TokenPos> = (src, i = 0) => {
   let index = i;

@@ -1,4 +1,4 @@
-import {
+import type {
   AccessExpression,
   Context,
   EvalValue,
@@ -10,7 +10,7 @@ import {
   Boolean,
   Pow,
 } from "./types";
-import { assert } from "./utils";
+import { assert } from "./utils.js";
 
 export const evalName = (expr: AccessExpression, ctx: Context): EvalValue => {
   const path = evalAccessExpr(expr, ctx);
@@ -41,16 +41,20 @@ export const evalValue = (expr: Value, ctx: Context): EvalValue => {
   if (expr.type === "num" || expr.type === "bool") return expr.item;
   if (expr.type === "str") return expr.item;
   if (expr.type === "expr") return evalExpr(expr.item, ctx);
+  if (expr.type === "fn") {
+    const fn = ctx[expr.item[0]];
+    return fn(...expr.item[1].map((item) => evalExpr(item, ctx)));
+  }
   // return evalName(expr.item, ctx);
   return evalName([expr], ctx);
 };
 
 export const evalPrefix = (expr: Prefix, ctx: Context): EvalValue => {
   const [value, rest] = expr;
-  const val = evalValue(value, ctx);
+  let val = evalValue(value, ctx);
 
-  if (rest) {
-    if (rest.type === "neg" && typeof val === "number") return -val;
+  for (const op of rest) {
+    if (op === "neg" && typeof val === "number") val = -val;
     // if (rest.type === "castString" && typeof val === "number") return `${val}`;
     // if (rest.type === "castString" && typeof val === "string") return `${val}`;
     // if (rest.type === "castNumber" && typeof val === "number")

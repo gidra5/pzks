@@ -1,5 +1,4 @@
-import {
-  AccessExpression,
+import type {
   Boolean,
   Expression,
   Pow,
@@ -9,7 +8,7 @@ import {
   Token,
   Value,
 } from "./types";
-import { Tree } from "./utils";
+import type { Tree } from "./utils";
 
 export const treeToken = (item: Token): Tree => {
   return { name: item.src };
@@ -100,7 +99,12 @@ export const treePow = (item: Pow): Tree => {
 export const treePrefix = (item: Prefix): Tree => {
   const [value, operator] = item;
   const valueTree = treeValue(value);
-  if (operator) return { name: operator.type, children: [valueTree] };
+  if (operator.length > 0) {
+    return operator.reduce(
+      (acc, item) => ({ children: [acc], name: item }),
+      valueTree
+    );
+  }
   return valueTree;
 };
 export const treeValue = (item: Value): Tree => {
@@ -109,5 +113,7 @@ export const treeValue = (item: Value): Tree => {
   if (item.type === "str") return { name: `"${item.item}"`, type: "str" };
   // if (item.type === "name") return stringifyAccessExpression(item.item);
   if (item.type === "name") return { name: item.item };
+  if (item.type === "fn")
+    return { name: item.item[0], children: item.item[1].map(treeExpression) };
   return treeExpression(item.item);
 };
