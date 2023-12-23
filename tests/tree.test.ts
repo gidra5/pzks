@@ -14,34 +14,60 @@ describe("parsing", () => {
 
       const [, tree] = parseExpr()(tokens);
       const exprTree = treeExpression(tree);
-      console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
-      console.log(printTree(exprTree));
-      console.log(printTree(treeOptimizer(exprTree)[0]));
+      // console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
+      // console.log(printTree(exprTree));
+      // console.log(printTree(treeOptimizer(exprTree)[0]));
       const optimizedTree = treeOptimizer(exprTree)[0];
       // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
       // printErrors(errors, tokens, map, fileName);
 
+      // console.log(optimizedTree, expectedTree);
+
       expect(optimizedTree).toEqual(expectedTree);
       // expect(true).toEqual(false);
     });
 
-  testCase("a+b", { name: "+", children: [{ name: "a" }, { name: "b" }] });
+  testCase("a+b", {
+    children: [
+      { name: "a", type: "name" },
+      { name: "b", type: "name" },
+    ],
+    name: "+",
+  });
 
   testCase("a+b+c", {
-    name: "+",
     children: [
-      { name: "+", children: [{ name: "a" }, { name: "b" }] },
-      { name: "c" },
+      {
+        children: [
+          { name: "a", type: "name" },
+          { name: "b", type: "name" },
+        ],
+        name: "+",
+      },
+      { name: "c", type: "name" },
     ],
+    name: "+",
   });
 
   testCase("a+b+c+d", {
     name: "+",
     children: [
-      { name: "+", children: [{ name: "a" }, { name: "b" }] },
-      { name: "+", children: [{ name: "c" }, { name: "d" }] },
+      {
+        children: [
+          { name: "a", type: "name" },
+          { name: "b", type: "name" },
+        ],
+        name: "+",
+      },
+      {
+        name: "+",
+        children: [
+          { name: "c", type: "name" },
+          { name: "d", type: "name" },
+        ],
+      },
     ],
   });
 
@@ -49,13 +75,25 @@ describe("parsing", () => {
     name: "+",
     children: [
       {
+        children: [
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "+",
+          },
+          { name: "c", type: "name" },
+        ],
+        name: "+",
+      },
+      {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "a" }, { name: "b" }] },
-          { name: "c" },
+          { name: "d", type: "name" },
+          { name: "e", type: "name" },
         ],
       },
-      { name: "+", children: [{ name: "d" }, { name: "e" }] },
     ],
   });
 
@@ -65,11 +103,29 @@ describe("parsing", () => {
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "+",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
-      { name: "+", children: [{ name: "e" }, { name: "f" }] },
+      {
+        name: "+",
+        children: [
+          { name: "e", type: "name" },
+          { name: "f", type: "name" },
+        ],
+      },
     ],
   });
 
@@ -77,17 +133,35 @@ describe("parsing", () => {
     name: "+",
     children: [
       {
-        name: "+",
         children: [
-          { name: "+", children: [{ name: "a" }, { name: "b" }] },
-          { name: "c" },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "+",
+          },
+          { name: "c", type: "name" },
         ],
+        name: "+",
       },
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "d" }, { name: "e" }] },
-          { name: "+", children: [{ name: "f" }, { name: "g" }] },
+          {
+            name: "+",
+            children: [
+              { name: "d", type: "name" },
+              { name: "e", type: "name" },
+            ],
+          },
+          {
+            name: "+",
+            children: [
+              { name: "f", type: "name" },
+              { name: "g", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -99,15 +173,39 @@ describe("parsing", () => {
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "+",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "e" }, { name: "f" }] },
-          { name: "+", children: [{ name: "g" }, { name: "h" }] },
+          {
+            name: "+",
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+          },
+          {
+            name: "+",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -122,15 +220,39 @@ describe("parsing", () => {
           {
             name: "+",
             children: [
-              { name: "+", children: [{ name: "a" }, { name: "b" }] },
-              { name: "+", children: [{ name: "c" }, { name: "d" }] },
+              {
+                children: [
+                  { name: "a", type: "name" },
+                  { name: "b", type: "name" },
+                ],
+                name: "+",
+              },
+              {
+                name: "+",
+                children: [
+                  { name: "c", type: "name" },
+                  { name: "d", type: "name" },
+                ],
+              },
             ],
           },
           {
             name: "+",
             children: [
-              { name: "+", children: [{ name: "e" }, { name: "f" }] },
-              { name: "+", children: [{ name: "g" }, { name: "h" }] },
+              {
+                name: "+",
+                children: [
+                  { name: "e", type: "name" },
+                  { name: "f", type: "name" },
+                ],
+              },
+              {
+                name: "+",
+                children: [
+                  { name: "g", type: "name" },
+                  { name: "h", type: "name" },
+                ],
+              },
             ],
           },
         ],
@@ -141,15 +263,39 @@ describe("parsing", () => {
           {
             name: "+",
             children: [
-              { name: "+", children: [{ name: "a2" }, { name: "b2" }] },
-              { name: "+", children: [{ name: "c2" }, { name: "d2" }] },
+              {
+                name: "+",
+                children: [
+                  { name: "a2", type: "name" },
+                  { name: "b2", type: "name" },
+                ],
+              },
+              {
+                name: "+",
+                children: [
+                  { name: "c2", type: "name" },
+                  { name: "d2", type: "name" },
+                ],
+              },
             ],
           },
           {
             name: "+",
             children: [
-              { name: "+", children: [{ name: "e2" }, { name: "f2" }] },
-              { name: "+", children: [{ name: "g2" }, { name: "h2" }] },
+              {
+                name: "+",
+                children: [
+                  { name: "e2", type: "name" },
+                  { name: "f2", type: "name" },
+                ],
+              },
+              {
+                name: "+",
+                children: [
+                  { name: "g2", type: "name" },
+                  { name: "h2", type: "name" },
+                ],
+              },
             ],
           },
         ],
@@ -163,15 +309,39 @@ describe("parsing", () => {
       {
         name: "-",
         children: [
-          { name: "-", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "-",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "e" }, { name: "f" }] },
-          { name: "+", children: [{ name: "g" }, { name: "h" }] },
+          {
+            name: "+",
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+          },
+          {
+            name: "+",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -183,15 +353,39 @@ describe("parsing", () => {
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            name: "+",
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "+",
         children: [
-          { name: "+", children: [{ name: "e" }, { name: "f" }] },
-          { name: "+", children: [{ name: "g" }, { name: "h" }] },
+          {
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+            name: "+",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -203,15 +397,39 @@ describe("parsing", () => {
       {
         name: "+",
         children: [
-          { name: "-", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "-",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "+",
         children: [
-          { name: "-", children: [{ name: "e" }, { name: "f" }] },
-          { name: "-", children: [{ name: "g" }, { name: "h" }] },
+          {
+            name: "-",
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+          },
+          {
+            name: "-",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -223,15 +441,39 @@ describe("parsing", () => {
       {
         name: "+",
         children: [
-          { name: "-", children: [{ name: "a" }, { name: "b" }] },
-          { name: "+", children: [{ name: "c" }, { name: "d" }] },
+          {
+            name: "-",
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+          },
+          {
+            name: "+",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "+",
         children: [
-          { name: "-", children: [{ name: "e" }, { name: "f" }] },
-          { name: "-", children: [{ name: "g" }, { name: "h" }] },
+          {
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+            name: "-",
+          },
+          {
+            name: "-",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -243,15 +485,39 @@ describe("parsing", () => {
       {
         name: "/",
         children: [
-          { children: [{ name: "a" }, { name: "b" }], name: "/" },
-          { name: "*", children: [{ name: "c" }, { name: "d" }] },
+          {
+            children: [
+              { name: "a", type: "name" },
+              { name: "b", type: "name" },
+            ],
+            name: "/",
+          },
+          {
+            name: "*",
+            children: [
+              { name: "c", type: "name" },
+              { name: "d", type: "name" },
+            ],
+          },
         ],
       },
       {
         name: "*",
         children: [
-          { name: "*", children: [{ name: "e" }, { name: "f" }] },
-          { name: "*", children: [{ name: "g" }, { name: "h" }] },
+          {
+            name: "*",
+            children: [
+              { name: "e", type: "name" },
+              { name: "f", type: "name" },
+            ],
+          },
+          {
+            name: "*",
+            children: [
+              { name: "g", type: "name" },
+              { name: "h", type: "name" },
+            ],
+          },
         ],
       },
     ],
@@ -265,13 +531,19 @@ describe("parsing", () => {
         children: [
           {
             name: "+",
-            children: [{ name: "i" }, { name: "2", type: "num" }],
+            children: [
+              { name: "i", type: "name" },
+              { name: "2", type: "num" },
+            ],
           },
           { name: "2.4", type: "num" },
         ],
       },
       {
-        children: [{ name: "e" }, { name: "2", type: "num" }],
+        children: [
+          { name: "e", type: "name" },
+          { name: "2", type: "num" },
+        ],
         name: "/",
       },
     ],
@@ -283,7 +555,10 @@ describe("parsing", () => {
       {
         children: [
           {
-            children: [{ name: "a" }, { name: "2", type: "num" }],
+            children: [
+              { name: "a", type: "name" },
+              { name: "2", type: "num" },
+            ],
             name: "*",
           },
           { name: "0", type: "num" },
@@ -293,7 +568,10 @@ describe("parsing", () => {
       {
         name: "-",
         children: [
-          { children: [{ name: "b" }, { name: "0" }], name: "/" },
+          {
+            children: [{ name: "b", type: "name" }, { name: "0" }],
+            name: "/",
+          },
           {
             children: [{ name: "1", type: "num" }, { name: "0" }],
             name: "/",
