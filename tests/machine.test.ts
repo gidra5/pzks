@@ -8,14 +8,21 @@ import { machineStates } from "../src/machine.js";
 import { printTree } from "../src/utils.js";
 
 describe("parsing", () => {
-  const testCase = (src, expectedStates, costs = {}, _it: any = it) =>
+  const testCase = (
+    src,
+    expectedStates,
+    costs = {},
+    n = 2,
+    m = 1,
+    _it: any = it
+  ) =>
     _it(`simulates tree in example '${src}'`, () => {
       const [tokens, _errors] = parseTokens(src);
 
       const [, tree] = parseExpr()(tokens);
       const exprTree = treeExpression(tree);
       const optimizedTree = treeOptimizer(exprTree)[0];
-      const states = machineStates(optimizedTree, costs);
+      const states = machineStates(optimizedTree, costs, n, m);
       // console.log(printTree(optimizedTree));
       // console.log(states, states.length);
 
@@ -111,4 +118,70 @@ describe("parsing", () => {
     ],
     { "+": 2, "*": 4, "/": 8, "-": 3 }
   );
+
+  // testCase(
+  //   "a*b+g/h-c*d+e*f",
+  //   [
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["compute", "read", "noop", "noop", "noop"],
+  //     ["compute", "compute", "read", "noop", "noop"],
+  //     ["compute", "compute", "compute", "read", "noop"],
+  //     ["compute", "compute", "compute", "compute", "noop"],
+  //     ["write", "compute", "compute", "compute", "noop"],
+  //     ["noop", "write", "compute", "compute", "noop"],
+  //     ["noop", "noop", "compute", "compute", "read"],
+  //     ["noop", "noop", "compute", "write", "noop"],
+  //     ["noop", "noop", "compute", "noop", "read"],
+  //     ["noop", "noop", "compute", "noop", "compute"],
+  //     ["noop", "noop", "write", "noop", "compute"],
+  //     ["noop", "noop", "noop", "noop", "compute"],
+  //     ["noop", "noop", "noop", "noop", "write"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["write", "noop", "noop", "noop", "noop"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["write", "noop", "noop", "noop", "noop"],
+  //   ],
+  //   { "+": 2, "*": 4, "/": 8, "-": 3 },
+  //   5,
+  //   1,
+  //   it.only
+  // );
+
+  // testCase(
+  //   "a*b+g/h-c*d+e*f",
+  //   [
+  //     ["read", "read", "noop", "noop", "noop"],
+  //     ["compute", "compute", "read", "read", "noop"],
+  //     ["compute", "compute", "compute", "compute", "noop"],
+  //     ["compute", "compute", "compute", "compute", "noop"],
+  //     ["compute", "compute", "compute", "compute", "noop"],
+  //     ["write", "write", "compute", "compute", "noop"],
+  //     ["noop", "noop", "compute", "write", "read"],
+  //     ["noop", "noop", "compute", "noop", "read"],
+  //     ["noop", "noop", "compute", "noop", "compute"],
+  //     ["noop", "noop", "compute", "noop", "compute"],
+  //     ["noop", "noop", "write", "noop", "compute"],
+  //     ["noop", "noop", "noop", "noop", "write"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["write", "noop", "noop", "noop", "noop"],
+  //     ["read", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["compute", "noop", "noop", "noop", "noop"],
+  //     ["write", "noop", "noop", "noop", "noop"],
+  //   ],
+  //   { "+": 2, "*": 4, "/": 8, "-": 3 },
+  //   5,
+  //   2,
+  //   it.only
+  // );
 });
