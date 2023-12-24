@@ -212,9 +212,9 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   ) {
     return { name: "0" };
   }
-  if (patternMatcher("_/0", item)) {
-    console.warn("Division by zero");
-  }
+  // if (patternMatcher("_/0", item)) {
+  //   console.warn("Division by zero");
+  // }
   if (patternMatcher("1*_", item)) {
     return item.children![1];
   }
@@ -287,10 +287,11 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   //   if (treeCost(a) > treeCost(b)) return { ...item, children: [b, a] };
   // }
 
-  // if (patternMatcher("(_ - _) - _", item)) {
-  //   const [{ children: [a, b] = [] }, c] = item.children!;
-  //   if (treeCost(b) > treeCost(c)) return { name: "-", children: [{ name: "-", children: [a, c] }, b] };
-  // }
+  if (patternMatcher("(_ - _) - _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    if (treeCost(b) > treeCost(c))
+      return { name: "-", children: [{ name: "-", children: [a, c] }, b] };
+  }
 
   // if (patternMatcher("_ * _", item)) {
   //   const [a, b] = item.children!;
@@ -307,6 +308,17 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   //     ],
   //   };
   // }
+
+  if (patternMatcher("(_ + _) * _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    return {
+      name: "+",
+      children: [
+        { name: "*", children: [a, c] },
+        { name: "*", children: [b, c] },
+      ],
+    };
+  }
 
   if (item.children && item.children.length > 0) {
     const children = item.children.map(treeOptimizerStep);
