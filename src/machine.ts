@@ -25,6 +25,10 @@ const isMemoryBusy = (
   threadStates: ThreadState[],
   maxBusyThreads: number
 ): boolean => threadStates.filter(isMemoryState).length >= maxBusyThreads;
+const isMemoryTooBusy = (
+  threadStates: ThreadState[],
+  maxBusyThreads: number
+): boolean => threadStates.filter(isMemoryState).length > maxBusyThreads;
 
 export const machineStates = (
   tree: Tree,
@@ -35,16 +39,28 @@ export const machineStates = (
   const states: State[][] = [];
   let threads = Array(n).fill({ state: "noop", time: 0 });
   let taskId = 1;
-  const step = () => {
+  const snapshot = () => {
     states.push(threads.map((thread) => thread.state));
-    threads = threads.map(nextThreadState);
   };
-
-  const waitTasks = (taskIds: number[]) => {
-    while (threads.some((thread) => taskIds.includes(thread.taskId))) {
+  const step = () => {
+    snapshot();
+    threads = threads.map(nextThreadState);
+    while (isMemoryTooBusy(threads, m)) {
+      const memoryThreads = threads
+        .map((t, i) => [t, i])
+        .filter(([t, i]) => isMemoryState(t));
+      const x = memoryThreads.slice(m, memoryThreads.length);
+      x.forEach(([, i]) => (threads[i] = { state: "noop", time: 0 }));
       step();
+      x.forEach(([t, i]) => (threads[i] = t));
     }
   };
+
+  // const waitTasks = (taskIds: number[]) => {
+  //   while (threads.some((thread) => taskIds.includes(thread.taskId))) {
+  //     step();
+  //   }
+  // };
 
   const scheduleTask = (time: number): number => {
     while (threads.every(isBusy) || isMemoryBusy(threads, m)) {
@@ -56,22 +72,40 @@ export const machineStates = (
     return id;
   };
 
-  const processTree = (tree: Tree): number | undefined => {
-    if (!tree.children || tree.children.length === 0) {
-      if (tree.type === "fn") {
-        return scheduleTask(costTable[tree.name] ?? 1);
-      }
-      return;
-    }
-    const ids = tree.children.map(processTree).filter(Boolean) as number[];
+  const traverseTree = ([currentNode, ...queue]: Tree[]): Tree[] => {
+    if (!currentNode) return [];
 
-    waitTasks(ids);
-    return scheduleTask(costTable[tree.name] ?? 1);
+    if (!currentNode.children || currentNode.children.length === 0) {
+      if (currentNode.type === "fn") {
+        return [currentNode, ...traverseTree(queue)];
+      }
+    } else {
+      const nodes = traverseTree([...queue, ...currentNode.children]);
+      return [currentNode, ...nodes];
+    }
+    return traverseTree(queue);
   };
 
-  const id = processTree(tree);
+  const processTree = (tree: Tree) => {
+    const nodes: Tree[] = traverseTree([tree]);
 
-  if (id) waitTasks([id]);
+    nodes.reverse().forEach((node) => {
+      if (threads.every(isBusy)) {
+        while (threads.some(isBusy)) {
+          step();
+        }
+      }
+      scheduleTask(costTable[node.name] ?? 1);
+    });
+  };
+
+  // const id = processTree(tree);
+  processTree(tree);
+
+  while (threads.some(isBusy)) {
+    step();
+  }
+  // if (id) waitTasks([id]);
 
   return states;
 };

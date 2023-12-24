@@ -16,8 +16,8 @@ describe("parsing", () => {
       const exprTree = treeExpression(tree);
       const optimizedTree = treeOptimizer(exprTree)[0];
       const states = machineStates(optimizedTree, costs);
-      console.log(printTree(optimizedTree));
-      console.log(states, states.length);
+      // console.log(printTree(optimizedTree));
+      // console.log(states, states.length);
 
       expect(states).toEqual(expectedStates);
     });
@@ -67,34 +67,48 @@ describe("parsing", () => {
       ["read", "noop"],
       ["compute", "read"],
       ["compute", "compute"],
-      ["write", "compute"],
-      ["noop", "compute"],
-      ["noop", "compute"],
-      ["noop", "write"],
+      ["compute", "compute"],
+      ["compute", "write"],
+      ["write", "noop"],
       ["read", "noop"],
       ["compute", "noop"],
       ["compute", "noop"],
       ["write", "noop"],
     ],
-    { "+": 2, "*": 4 },
-    it.only
+    { "+": 2, "*": 4 }
   );
-
-  // it.only(`simulates tree in example`, () => {
-  //   const [tokens, _errors] = parseTokens("a*b+c*d+e*f");
-
-  //   const [, tree] = parseExpr()(tokens);
-  //   const exprTree = treeExpression(tree);
-  //   const optimizedTree = treeOptimizer(exprTree)[0];
-  //   console.log(printTree(optimizedTree));
-
-  //   const states = machineStates(optimizedTree, {}, 3, 2);
-  //   console.log(states, states.length);
-  //   const states2 = machineStates(optimizedTree, {}, 2, 1);
-  //   console.log(states2, states2.length);
-  //   const states3 = machineStates(optimizedTree, {}, 5, 5);
-  //   console.log(states3, states3.length);
-
-  //   expect(states).toEqual([]);
-  // });
+  testCase(
+    "a*b+g/h-c*d+e*f",
+    [
+      ["read", "noop"],
+      ["compute", "read"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["write", "compute"],
+      ["noop", "write"],
+      ["read", "noop"],
+      ["compute", "read"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["compute", "write"],
+      ["compute", "noop"],
+      ["compute", "noop"],
+      ["write", "noop"],
+      ["read", "noop"],
+      ["compute", "read"],
+      ["compute", "compute"],
+      ["compute", "compute"],
+      ["write", "noop"],
+      ["noop", "write"],
+      ["read", "noop"],
+      ["compute", "noop"],
+      ["compute", "noop"],
+      ["compute", "noop"],
+      ["write", "noop"],
+    ],
+    { "+": 2, "*": 4, "/": 8, "-": 3 }
+  );
 });
