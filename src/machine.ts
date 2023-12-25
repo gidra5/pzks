@@ -1,3 +1,4 @@
+import { CostTable } from "./types";
 import { Tree } from "./utils";
 
 type State = "compute" | "read" | "write" | "noop";
@@ -32,7 +33,7 @@ const isMemoryTooBusy = (
 
 export const machineStates = (
   tree: Tree,
-  costTable: Record<string, number>,
+  costTable: CostTable,
   n = 2,
   m = 1
 ): State[][] => {

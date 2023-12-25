@@ -110,3 +110,5 @@ export const PREFIX_OPS = {
 } as const;
 export type BooleanOp = (typeof BOOLEAN_OPS)[number];
 export type PrefixOp = keyof typeof PREFIX_OPS;
+
+export type CostTable = Record<string, number>;
