@@ -2,6 +2,8 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { parseExpr } from "../src/parser.js";
 import { parseTokens } from "../src/tokens.js";
+import { FileMap } from "codespan-napi";
+import { printErrors } from "../src/utils.js";
 
 /* 
   Перевіряє, що вираз відповідає наступним вимогам:
@@ -28,6 +30,17 @@ describe("parsing", () => {
 
       expect(errors).toEqual(expectedErrors);
     });
+
+  // testCase(
+  //   "*101*1#(t-q)(t+q)//dt - (int*)f(8t, -(k/h)A[i+6.]), exp(), ))(t-k*8.00.1/.0",
+  //   [],
+  //   it.only
+  // );
+  // testCase(
+  //   "101*1+(t-q)*(t+q)/dt - int*f(8*t, -(k/h)*A*(i+6.), exp(1))*(t-k*8.001/.0)",
+  //   [],
+  //   it.only
+  // );
 
   testCase("()", [
     {

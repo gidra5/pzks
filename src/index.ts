@@ -8,7 +8,7 @@ import { parseAccessExpression, parseExpr } from "./parser.js";
 import { printErrors, printTokenErrors, printTree } from "./utils.js";
 import { FileMap } from "codespan-napi";
 import { treeExpression } from "./tree.js";
-import { treeOptimizer } from "./optimizer.js";
+// import { treeOptimizer } from "./optimizer.js";
 
 program.option("-i, --interactive");
 
@@ -41,7 +41,7 @@ if (interactive) {
         const [, tree, exprErrors] = parseExpr()(tokens);
         printErrors(exprErrors, tokens, map, fileName);
         console.log(printTree(treeExpression(tree)));
-        console.log(printTree(treeOptimizer(treeExpression(tree))[0]));
+        // console.log(printTree(treeOptimizer(treeExpression(tree))[0]));
 
         // const x = evalExpr(tree, ctx);
         break;

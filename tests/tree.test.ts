@@ -3,8 +3,8 @@ import { it } from "@fast-check/vitest";
 import { parseExpr } from "../src/parser.js";
 import { parseTokens } from "../src/tokens.js";
 import { treeExpression } from "../src/tree.js";
+import { iterateAll, rebalance, simplify } from "../src/optimizer.js";
 import { printTree } from "../src/utils.js";
-import { treeOptimizer } from "../src/optimizer.js";
 
 describe("parsing", () => {
   const testCase = (src, expectedTree, _it: any = it) =>
@@ -17,7 +17,12 @@ describe("parsing", () => {
       // console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
       // console.log(printTree(exprTree));
       // console.log(printTree(treeOptimizer(exprTree)[0]));
-      const optimizedTree = treeOptimizer(exprTree)[0];
+      // const optimizedTree = treeOptimizer(exprTree)[0];
+      // const optimizedTree = iterateAll(simplify, rebalance())(exprTree)[0];
+      // const optimizedTree = simplify(exprTree)[0];
+      const optimizedTree = rebalance()(exprTree)[0];
+      console.log(printTree(optimizedTree));
+      console.dir({ tree: optimizedTree }, { depth: null });
       // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
@@ -211,97 +216,101 @@ describe("parsing", () => {
     ],
   });
 
-  testCase("a+b+c+d+e+f+g+h+a2+b2+c2+d2+e2+f2+g2+h2", {
-    name: "+",
-    children: [
-      {
-        name: "+",
-        children: [
-          {
-            name: "+",
-            children: [
-              {
-                children: [
-                  { name: "a", type: "name" },
-                  { name: "b", type: "name" },
-                ],
-                name: "+",
-              },
-              {
-                name: "+",
-                children: [
-                  { name: "c", type: "name" },
-                  { name: "d", type: "name" },
-                ],
-              },
-            ],
-          },
-          {
-            name: "+",
-            children: [
-              {
-                name: "+",
-                children: [
-                  { name: "e", type: "name" },
-                  { name: "f", type: "name" },
-                ],
-              },
-              {
-                name: "+",
-                children: [
-                  { name: "g", type: "name" },
-                  { name: "h", type: "name" },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-      {
-        name: "+",
-        children: [
-          {
-            name: "+",
-            children: [
-              {
-                name: "+",
-                children: [
-                  { name: "a2", type: "name" },
-                  { name: "b2", type: "name" },
-                ],
-              },
-              {
-                name: "+",
-                children: [
-                  { name: "c2", type: "name" },
-                  { name: "d2", type: "name" },
-                ],
-              },
-            ],
-          },
-          {
-            name: "+",
-            children: [
-              {
-                name: "+",
-                children: [
-                  { name: "e2", type: "name" },
-                  { name: "f2", type: "name" },
-                ],
-              },
-              {
-                name: "+",
-                children: [
-                  { name: "g2", type: "name" },
-                  { name: "h2", type: "name" },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
+  testCase(
+    "a+b+c+d+e+f+g+h+a2+b2+c2+d2+e2+f2+g2+h2",
+    {
+      name: "+",
+      children: [
+        {
+          name: "+",
+          children: [
+            {
+              name: "+",
+              children: [
+                {
+                  children: [
+                    { name: "a", type: "name" },
+                    { name: "b", type: "name" },
+                  ],
+                  name: "+",
+                },
+                {
+                  name: "+",
+                  children: [
+                    { name: "c", type: "name" },
+                    { name: "d", type: "name" },
+                  ],
+                },
+              ],
+            },
+            {
+              name: "+",
+              children: [
+                {
+                  name: "+",
+                  children: [
+                    { name: "e", type: "name" },
+                    { name: "f", type: "name" },
+                  ],
+                },
+                {
+                  name: "+",
+                  children: [
+                    { name: "g", type: "name" },
+                    { name: "h", type: "name" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: "+",
+          children: [
+            {
+              name: "+",
+              children: [
+                {
+                  name: "+",
+                  children: [
+                    { name: "a2", type: "name" },
+                    { name: "b2", type: "name" },
+                  ],
+                },
+                {
+                  name: "+",
+                  children: [
+                    { name: "c2", type: "name" },
+                    { name: "d2", type: "name" },
+                  ],
+                },
+              ],
+            },
+            {
+              name: "+",
+              children: [
+                {
+                  name: "+",
+                  children: [
+                    { name: "e2", type: "name" },
+                    { name: "f2", type: "name" },
+                  ],
+                },
+                {
+                  name: "+",
+                  children: [
+                    { name: "g2", type: "name" },
+                    { name: "h2", type: "name" },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    it.only
+  );
 
   testCase("a-b-c-d-e-f-g-h", {
     name: "-",
@@ -527,16 +536,10 @@ describe("parsing", () => {
     name: "+",
     children: [
       {
-        name: "-",
+        name: "+",
         children: [
-          {
-            name: "+",
-            children: [
-              { name: "i", type: "name" },
-              { name: "2", type: "num" },
-            ],
-          },
-          { name: "2.4", type: "num" },
+          { name: "i", type: "name" },
+          { name: "-0.3999999999999999", type: "num" },
         ],
       },
       {
@@ -569,11 +572,17 @@ describe("parsing", () => {
         name: "-",
         children: [
           {
-            children: [{ name: "b", type: "name" }, { name: "0" }],
+            children: [
+              { name: "b", type: "name" },
+              { name: "0", type: "num" },
+            ],
             name: "/",
           },
           {
-            children: [{ name: "1", type: "num" }, { name: "0" }],
+            children: [
+              { name: "1", type: "num" },
+              { name: "0", type: "num" },
+            ],
             name: "/",
           },
         ],
