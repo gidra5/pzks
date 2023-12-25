@@ -2,25 +2,32 @@ import { parseExpr } from "./parser.js";
 import { treeCost, treeExpression } from "./tree.js";
 import { parseTokens } from "./tokens.js";
 import type { Tree } from "./utils";
+import { CostTable } from "./types.js";
 
-export const treeOptimizer = (item: Tree): [Tree, boolean] => {
-  let i = 0;
-  while (JSON.stringify(item) !== JSON.stringify(treeOptimizerStep(item))) {
-    if (i >= 11) {
-      break;
+export const iterate =
+  <T>(f: (x: T) => T, maxIterations = 10) =>
+  (item: T): [T, boolean] => {
+    let i = 0;
+    let next = f(item);
+    while (JSON.stringify(item) !== JSON.stringify(next)) {
+      if (i >= maxIterations) {
+        break;
+      }
+      item = next;
+      next = f(item);
+      i++;
     }
-    item = treeOptimizerStep(item);
-    i++;
-  }
 
-  return [item, i === 0];
-};
+    return [next, i === 0];
+  };
+
+export const iterateAll = <T>(...fns: ((x: T) => [T, boolean])[]) =>
+  iterate<T>((item) => fns.reduce((acc, fn) => fn(acc)[0], item));
 
 export const treeOptimizerStep = (item: Tree): Tree => {
   if (patternMatcher("_ + (_ - _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
       return {
@@ -37,8 +44,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("_ - (_ + _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
       return {
@@ -55,8 +61,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("_ - (_ - _)", item)) {
     const [a, { children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
       return {
@@ -76,8 +81,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     patternMatcher("_ * (_ * _)", item)
   ) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
-    const canBalance =
-      getDepth(a) < getDepth(b) + 1 || getDepth(a) < getDepth(c) + 1;
+    const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
       return {
@@ -327,6 +331,224 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   return item;
 };
+
+export const sortByCostStep =
+  (costTable: CostTable) =>
+  (item: Tree): Tree => {
+    if (item.children && item.children.length > 0) {
+      item = {
+        ...item,
+        children: item.children.map(sortByCostStep(costTable)),
+      };
+    }
+
+    const getCost = (item: Tree): number => treeCost(item, costTable);
+
+    if (patternMatcher("_ + _", item)) {
+      const [a, b] = item.children!;
+      if (getCost(a) > getCost(b)) return { ...item, children: [b, a] };
+    }
+
+    if (patternMatcher("_ * _", item)) {
+      const [a, b] = item.children!;
+      if (getCost(a) > getCost(b)) return { ...item, children: [b, a] };
+    }
+
+    if (patternMatcher("(_ - _) - _", item)) {
+      const [{ children: [a, b] = [] }, c] = item.children!;
+      if (getCost(b) > getCost(c))
+        return {
+          name: "/",
+          children: [{ name: "-", children: [a, c] }, b],
+        };
+    }
+
+    if (patternMatcher("(_ / _) / _", item)) {
+      const [{ children: [a, b] = [] }, c] = item.children!;
+      if (getCost(b) > getCost(c))
+        return {
+          name: "/",
+          children: [{ name: "/", children: [a, c] }, b],
+        };
+    }
+
+    if (item.children && item.children.length > 0) {
+      item.children = item.children.map(sortByCostStep(costTable));
+    }
+
+    return item;
+  };
+
+export const distributeStep = (item: Tree): Tree => {
+  if (item.children && item.children.length > 0) {
+    item = { ...item, children: item.children.map(distributeStep) };
+  }
+
+  if (patternMatcher("_ * (_ + _)", item)) {
+    const [a, { children: [b, c] = [] }] = item.children!;
+    return {
+      name: "+",
+      children: [
+        { name: "*", children: [a, b] },
+        { name: "*", children: [a, c] },
+      ],
+    };
+  }
+
+  if (patternMatcher("(_ + _) * _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    return {
+      name: "+",
+      children: [
+        { name: "*", children: [a, c] },
+        { name: "*", children: [b, c] },
+      ],
+    };
+  }
+
+  if (patternMatcher("_ * (_ - _)", item)) {
+    const [a, { children: [b, c] = [] }] = item.children!;
+    return {
+      name: "-",
+      children: [
+        { name: "*", children: [a, b] },
+        { name: "*", children: [a, c] },
+      ],
+    };
+  }
+
+  if (patternMatcher("(_ - _) * _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    return {
+      name: "-",
+      children: [
+        { name: "*", children: [a, c] },
+        { name: "*", children: [b, c] },
+      ],
+    };
+  }
+
+  if (patternMatcher("(_ - _) / _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    return {
+      name: "-",
+      children: [
+        { name: "/", children: [a, c] },
+        { name: "/", children: [b, c] },
+      ],
+    };
+  }
+
+  if (patternMatcher("(_ + _) / _", item)) {
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    return {
+      name: "+",
+      children: [
+        { name: "/", children: [a, c] },
+        { name: "/", children: [b, c] },
+      ],
+    };
+  }
+
+  return item;
+};
+
+export const factorizeStep = (item: Tree): Tree => {
+  if (item.children && item.children.length > 0) {
+    item = { ...item, children: item.children.map(factorizeStep) };
+  }
+
+  if (patternMatcher("(_/_) + (_/_)", item)) {
+    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
+      item.children!;
+    if (JSON.stringify(b) === JSON.stringify(d)) {
+      return {
+        name: "/",
+        children: [{ name: "+", children: [a, c] }, b],
+      };
+    }
+  }
+
+  if (patternMatcher("(_/_) - (_/_)", item)) {
+    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
+      item.children!;
+    if (JSON.stringify(b) === JSON.stringify(d)) {
+      return {
+        name: "/",
+        children: [{ name: "-", children: [a, c] }, b],
+      };
+    }
+  }
+
+  if (patternMatcher("(_*_) - (_*_)", item)) {
+    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
+      item.children!;
+    if (JSON.stringify(b) === JSON.stringify(d)) {
+      return {
+        name: "*",
+        children: [{ name: "-", children: [a, c] }, b],
+      };
+    }
+    if (JSON.stringify(a) === JSON.stringify(d)) {
+      return {
+        name: "*",
+        children: [{ name: "-", children: [b, c] }, a],
+      };
+    }
+    if (JSON.stringify(b) === JSON.stringify(c)) {
+      return {
+        name: "*",
+        children: [{ name: "-", children: [a, d] }, b],
+      };
+    }
+    if (JSON.stringify(a) === JSON.stringify(c)) {
+      return {
+        name: "*",
+        children: [{ name: "-", children: [b, d] }, c],
+      };
+    }
+  }
+
+  if (patternMatcher("(_*_) + (_*_)", item)) {
+    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
+      item.children!;
+    if (JSON.stringify(b) === JSON.stringify(d)) {
+      return {
+        name: "*",
+        children: [{ name: "+", children: [a, c] }, b],
+      };
+    }
+    if (JSON.stringify(a) === JSON.stringify(d)) {
+      return {
+        name: "*",
+        children: [{ name: "+", children: [b, c] }, a],
+      };
+    }
+    if (JSON.stringify(b) === JSON.stringify(c)) {
+      return {
+        name: "*",
+        children: [{ name: "+", children: [a, d] }, b],
+      };
+    }
+    if (JSON.stringify(a) === JSON.stringify(c)) {
+      return {
+        name: "*",
+        children: [{ name: "+", children: [b, d] }, c],
+      };
+    }
+  }
+
+  return item;
+};
+
+export const sortByCost = (costTable: CostTable = {}) =>
+  iterate(sortByCostStep(costTable));
+
+export const distribute = iterate(distributeStep);
+
+export const factorize = iterate(factorizeStep);
+
+export const treeOptimizer = iterate(treeOptimizerStep);
 
 const getDepth = (item: Tree): number => {
   if (item.children === undefined) {
