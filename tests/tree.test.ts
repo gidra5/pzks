@@ -569,11 +569,17 @@ describe("parsing", () => {
         name: "-",
         children: [
           {
-            children: [{ name: "b", type: "name" }, { name: "0" }],
+            children: [
+              { name: "b", type: "name" },
+              { name: "0", type: "num" },
+            ],
             name: "/",
           },
           {
-            children: [{ name: "1", type: "num" }, { name: "0" }],
+            children: [
+              { name: "1", type: "num" },
+              { name: "0", type: "num" },
+            ],
             name: "/",
           },
         ],

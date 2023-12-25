@@ -101,7 +101,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     patternMatcher("(_ * _) * _", item)
   ) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
+    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -118,7 +118,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("(_ - _) - _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
+    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -135,7 +135,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("(_ - _) + _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
+    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -152,7 +152,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("(_ + _) - _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
+    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -169,7 +169,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("(_ / _) / _", item)) {
     const [{ children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(a) > getDepth(c) || getDepth(b) > getDepth(c);
+    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
     if (canBalance)
       return {
@@ -191,10 +191,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
 
   if (patternMatcher("_-(-_)", item)) {
     const [a, { children: [b] = [] }] = item.children!;
-    return {
-      name: "+",
-      children: [a, b],
-    };
+    return { name: "+", children: [a, b] };
   }
 
   if (patternMatcher("0+_", item)) {
@@ -204,7 +201,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     return item.children![0];
   }
   if (patternMatcher("0-_", item)) {
-    return { name: "-", children: [item.children![1]] };
+    return { name: "neg", children: [item.children![1]] };
   }
   if (patternMatcher("_-0", item)) {
     return item.children![0];
@@ -214,7 +211,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     patternMatcher("_*0", item) ||
     patternMatcher("0/_", item)
   ) {
-    return { name: "0" };
+    return { name: "0", type: "num" };
   }
   // if (patternMatcher("_/0", item)) {
   //   console.warn("Division by zero");
@@ -241,14 +238,14 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     patternMatcher("_ - _", item) &&
     treeMatcher(item.children![0], item.children![1])[0]
   ) {
-    return { name: "0" };
+    return { name: "0", type: "num" };
   }
 
   if (
     patternMatcher("_ / _", item) &&
     treeMatcher(item.children![0], item.children![1])[0]
   ) {
-    return { name: "1" };
+    return { name: "1", type: "num" };
   }
 
   if (
@@ -272,7 +269,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
         Number(item.children![0].name) * Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
-    if (op === "/") {
+    if (op === "/" && Number(item.children![1].name) !== 0) {
       const value =
         Number(item.children![0].name) / Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
