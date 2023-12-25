@@ -14,9 +14,9 @@ describe("parsing", () => {
 
       const [, tree] = parseExpr()(tokens);
       const exprTree = treeExpression(tree);
-      // console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
+      console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
       // console.log(printTree(exprTree));
-      // console.log(printTree(treeOptimizer(exprTree)[0]));
+      console.log(printTree(treeOptimizer(exprTree)[0]));
       const optimizedTree = treeOptimizer(exprTree)[0];
       // let map = new FileMap();
       // const fileName = "test";
@@ -548,6 +548,26 @@ describe("parsing", () => {
       },
     ],
   });
+
+  // testCase("i/1.0 + 0 - 0*k*h + 2 - 4.8/2 + 1*e/2", {
+  //   name: "+",
+  //   children: [
+  //     {
+  //       name: "+",
+  //       children: [
+  //         { name: "i", type: "name" },
+  //         { name: "-0.4", type: "num" },
+  //       ],
+  //     },
+  //     {
+  //       children: [
+  //         { name: "e", type: "name" },
+  //         { name: "2", type: "num" },
+  //       ],
+  //       name: "/",
+  //     },
+  //   ],
+  // });
 
   testCase("a*2/0 + b/(b+b*0-1*b) - 1/(c*2*4.76*(1-2+1))", {
     name: "+",

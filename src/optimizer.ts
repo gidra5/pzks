@@ -26,7 +26,7 @@ export const iterateAll = <T>(...fns: ((x: T) => [T, boolean])[]) =>
 
 export const treeOptimizerStep = (item: Tree): Tree => {
   if (patternMatcher("_ + (_ - _)", item)) {
-    const [a, { children: [b, c] = [] }] = item.children!;
+    const { a, b, c } = patternMatcherDict("a + (b - c)", item);
     const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
@@ -43,7 +43,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("_ - (_ + _)", item)) {
-    const [a, { children: [b, c] = [] }] = item.children!;
+    const { a, b, c } = patternMatcherDict("a - (b + c)", item);
     const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
@@ -60,7 +60,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("_ - (_ - _)", item)) {
-    const [a, { children: [b, c] = [] }] = item.children!;
+    const { a, b, c } = patternMatcherDict("a - (b - c)", item);
     const canBalance = getDepth(a) < getDepth(item.children![1]);
 
     if (canBalance)
@@ -185,12 +185,12 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("-(-_)", item)) {
-    const [{ children: [a] = [] }] = item.children!;
+    const { a } = patternMatcherDict("-(-a)", item);
     return a;
   }
 
   if (patternMatcher("_-(-_)", item)) {
-    const [a, { children: [b] = [] }] = item.children!;
+    const { a, b } = patternMatcherDict("a-(-b)", item);
     return { name: "+", children: [a, b] };
   }
 
@@ -223,27 +223,24 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     return item.children![0];
   }
   if (patternMatcher("_*(1/_)", item)) {
-    const [a, { children: [, b] = [] }] = item.children!;
+    const { a, b } = patternMatcherDict("a*(1/b)", item);
     return { name: "/", children: [a, b] };
   }
   if (patternMatcher("1/(1/_)", item)) {
-    const [, { children: [, a] = [] }] = item.children!;
+    const { a } = patternMatcherDict("1/(1/a)", item);
     return a;
   }
   if (patternMatcher("_/1", item)) {
     return item.children![0];
   }
 
-  if (
-    patternMatcher("_ - _", item) &&
-    treeMatcher(item.children![0], item.children![1])[0]
-  ) {
+  if (patternMatcher("x - x", item)) {
     return { name: "0", type: "num" };
   }
 
   if (
-    patternMatcher("_ / _", item) &&
-    treeMatcher(item.children![0], item.children![1])[0]
+    patternMatcher("x / x", item) &&
+    isEqual(item.children![0], item.children![1])
   ) {
     return { name: "1", type: "num" };
   }
@@ -283,44 +280,6 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     }
   }
 
-  // if (patternMatcher("_ + _", item)) {
-  //   const [a, b] = item.children!;
-  //   if (treeCost(a) > treeCost(b)) return { ...item, children: [b, a] };
-  // }
-
-  if (patternMatcher("(_ - _) - _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
-    if (treeCost(b) > treeCost(c))
-      return { name: "-", children: [{ name: "-", children: [a, c] }, b] };
-  }
-
-  // if (patternMatcher("_ * _", item)) {
-  //   const [a, b] = item.children!;
-  //   if (treeCost(a) > treeCost(b)) return { ...item, children: [b, a] };
-  // }
-
-  // if (patternMatcher("_ * (_ + _)", item)) {
-  //   const [a, { children: [b, c] = [] }] = item.children!;
-  //   return {
-  //     name: "+",
-  //     children: [
-  //       { name: "*", children: [a, b] },
-  //       { name: "*", children: [a, c] },
-  //     ],
-  //   };
-  // }
-
-  if (patternMatcher("(_ + _) * _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
-    return {
-      name: "+",
-      children: [
-        { name: "*", children: [a, c] },
-        { name: "*", children: [b, c] },
-      ],
-    };
-  }
-
   if (item.children && item.children.length > 0) {
     const children = item.children.map(treeOptimizerStep);
     return { ...item, children };
@@ -352,25 +311,21 @@ export const sortByCostStep =
     }
 
     if (patternMatcher("(_ - _) - _", item)) {
-      const [{ children: [a, b] = [] }, c] = item.children!;
+      const { a, b, c } = patternMatcherDict("(a - b) - c", item);
       if (getCost(b) > getCost(c))
         return {
-          name: "/",
+          name: "-",
           children: [{ name: "-", children: [a, c] }, b],
         };
     }
 
     if (patternMatcher("(_ / _) / _", item)) {
-      const [{ children: [a, b] = [] }, c] = item.children!;
+      const { a, b, c } = patternMatcherDict("(a / b) / c", item);
       if (getCost(b) > getCost(c))
         return {
           name: "/",
           children: [{ name: "/", children: [a, c] }, b],
         };
-    }
-
-    if (item.children && item.children.length > 0) {
-      item.children = item.children.map(sortByCostStep(costTable));
     }
 
     return item;
@@ -382,7 +337,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("_ * (_ + _)", item)) {
-    const [a, { children: [b, c] = [] }] = item.children!;
+    const { a, b, c } = patternMatcherDict("a * (b + c)", item);
     return {
       name: "+",
       children: [
@@ -393,7 +348,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("(_ + _) * _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
+    const { a, b, c } = patternMatcherDict("(a + b) * c", item);
     return {
       name: "+",
       children: [
@@ -404,7 +359,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("_ * (_ - _)", item)) {
-    const [a, { children: [b, c] = [] }] = item.children!;
+    const { a, b, c } = patternMatcherDict("a * (b - c)", item);
     return {
       name: "-",
       children: [
@@ -415,7 +370,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("(_ - _) * _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
+    const { a, b, c } = patternMatcherDict("(a - b) * c", item);
     return {
       name: "-",
       children: [
@@ -426,7 +381,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("(_ - _) / _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
+    const { a, b, c } = patternMatcherDict("(a - b) / c", item);
     return {
       name: "-",
       children: [
@@ -437,7 +392,7 @@ export const distributeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("(_ + _) / _", item)) {
-    const [{ children: [a, b] = [] }, c] = item.children!;
+    const { a, b, c } = patternMatcherDict("(a + b) / c", item);
     return {
       name: "+",
       children: [
@@ -455,50 +410,43 @@ export const factorizeStep = (item: Tree): Tree => {
     item = { ...item, children: item.children.map(factorizeStep) };
   }
 
-  if (patternMatcher("(_/_) + (_/_)", item)) {
-    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
-      item.children!;
-    if (JSON.stringify(b) === JSON.stringify(d)) {
-      return {
-        name: "/",
-        children: [{ name: "+", children: [a, c] }, b],
-      };
-    }
+  if (patternMatcher("(_/b) + (_/b)", item)) {
+    const { a, b, c } = patternMatcherDict("(a/b) + (c/b)", item);
+    return {
+      name: "/",
+      children: [{ name: "+", children: [a, c] }, b],
+    };
   }
 
-  if (patternMatcher("(_/_) - (_/_)", item)) {
-    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
-      item.children!;
-    if (JSON.stringify(b) === JSON.stringify(d)) {
-      return {
-        name: "/",
-        children: [{ name: "-", children: [a, c] }, b],
-      };
-    }
+  if (patternMatcher("(_/b) - (_/b)", item)) {
+    const { a, b, c } = patternMatcherDict("(a/b) - (c/b)", item);
+    return {
+      name: "/",
+      children: [{ name: "-", children: [a, c] }, b],
+    };
   }
 
   if (patternMatcher("(_*_) - (_*_)", item)) {
-    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
-      item.children!;
-    if (JSON.stringify(b) === JSON.stringify(d)) {
+    const { a, b, c, d } = patternMatcherDict("(a*b) - (c*d)", item);
+    if (isEqual(b, d)) {
       return {
         name: "*",
         children: [{ name: "-", children: [a, c] }, b],
       };
     }
-    if (JSON.stringify(a) === JSON.stringify(d)) {
+    if (isEqual(a, d)) {
       return {
         name: "*",
         children: [{ name: "-", children: [b, c] }, a],
       };
     }
-    if (JSON.stringify(b) === JSON.stringify(c)) {
+    if (isEqual(b, c)) {
       return {
         name: "*",
         children: [{ name: "-", children: [a, d] }, b],
       };
     }
-    if (JSON.stringify(a) === JSON.stringify(c)) {
+    if (isEqual(a, c)) {
       return {
         name: "*",
         children: [{ name: "-", children: [b, d] }, c],
@@ -507,27 +455,26 @@ export const factorizeStep = (item: Tree): Tree => {
   }
 
   if (patternMatcher("(_*_) + (_*_)", item)) {
-    const [{ children: [a, b] = [] }, { children: [c, d] = [] }] =
-      item.children!;
-    if (JSON.stringify(b) === JSON.stringify(d)) {
+    const { a, b, c, d } = patternMatcherDict("(a*b) + (c*d)", item);
+    if (isEqual(b, d)) {
       return {
         name: "*",
         children: [{ name: "+", children: [a, c] }, b],
       };
     }
-    if (JSON.stringify(a) === JSON.stringify(d)) {
+    if (isEqual(a, d)) {
       return {
         name: "*",
         children: [{ name: "+", children: [b, c] }, a],
       };
     }
-    if (JSON.stringify(b) === JSON.stringify(c)) {
+    if (isEqual(b, c)) {
       return {
         name: "*",
         children: [{ name: "+", children: [a, d] }, b],
       };
     }
-    if (JSON.stringify(a) === JSON.stringify(c)) {
+    if (isEqual(a, c)) {
       return {
         name: "*",
         children: [{ name: "+", children: [b, d] }, c],
@@ -563,43 +510,48 @@ const treeMatcher = (
     return [true, dict];
   }
 
+  if (matcher.name in dict) {
+    return [isEqual(dict[matcher.name], item), dict];
+  } else if (matcher.type === "name") {
+    return [true, { ...dict, [matcher.name]: item }];
+  }
+
   if (item.name !== matcher.name) {
     return [false, dict];
   }
 
-  if (item.children === undefined && matcher.children === undefined) {
+  if (item.children === matcher.children) {
     return [true, dict];
   }
-  if (!(item.children !== undefined && matcher.children !== undefined)) {
+
+  if (!(item.children && matcher.children)) {
     return [false, dict];
   }
+
   if (item.children.length !== matcher.children.length) {
     return [false, dict];
   }
 
-  return item.children.reduce(
-    (acc, child, i) => {
-      if (!acc[0]) return acc;
-      if (!matcher.children) return [false, acc[1]];
-      if (!matcher.children[i]) return [false, acc[1]];
-      return treeMatcher(child, matcher.children[i], acc[1]);
-    },
-    [true as boolean, dict]
-  );
+  let acc: [boolean, Record<string, Tree>] = [true, dict];
+
+  for (let i = 0; i < matcher.children.length; i++) {
+    acc = treeMatcher(item.children[i], matcher.children[i], acc[1]);
+    if (!acc[0]) return acc;
+  }
+
+  return acc;
 };
 
-const patternMatcher = (pattern: string, item: Tree): boolean => {
+export const stringTreeMatcher = (pattern: string, item: Tree) => {
   const [, patternTree] = parseExpr()(parseTokens(pattern)[0]);
-  // if (pattern === "a - a")
-  //   console.dir(treeExpression(patternTree), { depth: null });
 
-  return treeMatcher(item, treeExpression(patternTree))[0];
+  return treeMatcher(item, treeExpression(patternTree));
 };
+
+export const patternMatcher = (pattern: string, item: Tree): boolean =>
+  stringTreeMatcher(pattern, item)[0];
 
 const patternMatcherDict = (
   pattern: string,
   item: Tree
-): Record<string, Tree> => {
-  const [, patternTree] = parseExpr()(parseTokens(pattern)[0]);
-  return treeMatcher(item, treeExpression(patternTree))[1];
-};
+): Record<string, Tree> => stringTreeMatcher(pattern, item)[1];
