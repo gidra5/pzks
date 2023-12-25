@@ -1,7 +1,7 @@
 import { parseExpr } from "./parser.js";
 import { treeCost, treeExpression } from "./tree.js";
 import { parseTokens } from "./tokens.js";
-import type { Tree } from "./utils";
+import { isEqual, type Tree } from "./utils";
 import { CostTable } from "./types.js";
 
 export const iterate =
@@ -9,7 +9,7 @@ export const iterate =
   (item: T): [T, boolean] => {
     let i = 0;
     let next = f(item);
-    while (JSON.stringify(item) !== JSON.stringify(next)) {
+    while (!isEqual(item, next)) {
       if (i >= maxIterations) {
         break;
       }

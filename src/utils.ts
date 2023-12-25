@@ -121,3 +121,25 @@ export const printErrors = (errors, tokens, map, fileName) => {
   const errorsDiagnostic = errors.map(errorDiagnostic);
   errorsDiagnostic.forEach((error) => error.emitStd(map));
 };
+
+export const isEqual = (a, b) => {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  if (typeof a !== "object" || typeof b !== "object") return false;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!isEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  if (Object.keys(a).length !== Object.keys(b).length) return false;
+  for (const key in a) {
+    if (!(key in b)) return false;
+    if (!isEqual(a[key], b[key])) return false;
+  }
+
+  return true;
+};
