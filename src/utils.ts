@@ -143,3 +143,20 @@ export const isEqual = (a, b) => {
 
   return true;
 };
+
+export const costs = { "+": 2, "*": 4, "/": 8, "-": 3 };
+
+//1 / (f + (1 - f) / N), де f - частка послідовних обчислень [0, 1], N - число процессорів
+export const calcMaxAcceleration = (linearFraction: number, N: number) =>
+  N / (linearFraction * (N - 1) + 1);
+
+const treeEdgeCount = (tree: Tree) =>
+  tree.children?.reduce(
+    (acc, child) => acc + treeEdgeCount(child),
+    tree.children.length
+  ) ?? 0;
+const treeVertexCount = (tree: Tree) =>
+  tree.children?.reduce((acc, child) => acc + treeVertexCount(child), 1) ?? 1;
+
+export const calcLinearFraction = (expr: Tree) =>
+  treeEdgeCount(expr) / treeVertexCount(expr);

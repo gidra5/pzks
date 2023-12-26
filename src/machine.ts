@@ -18,18 +18,38 @@ const setupThread = (time: number, taskId: number): ThreadState => ({
   taskId,
 });
 
-const isBusy = (threadState: ThreadState): boolean =>
+const isBusy = (state: State): boolean => state !== "noop";
+const isMemoryState = (state: State): boolean =>
+  state === "read" || state === "write";
+
+const isBusyThread = (threadState: ThreadState): boolean =>
   threadState.state !== "noop";
-const isMemoryState = (threadState: ThreadState): boolean =>
+const isMemoryThreadState = (threadState: ThreadState): boolean =>
   threadState.state === "read" || threadState.state === "write";
 const isMemoryBusy = (
   threadStates: ThreadState[],
   maxBusyThreads: number
-): boolean => threadStates.filter(isMemoryState).length >= maxBusyThreads;
+): boolean => threadStates.filter(isMemoryThreadState).length >= maxBusyThreads;
 const isMemoryTooBusy = (
   threadStates: ThreadState[],
   maxBusyThreads: number
-): boolean => threadStates.filter(isMemoryState).length > maxBusyThreads;
+): boolean => threadStates.filter(isMemoryThreadState).length > maxBusyThreads;
+
+export const calculateLoad = (
+  states: State[][],
+  n: number,
+  m: number
+): [number[], number[]] => [
+  Array(n).map(
+    (_, i) =>
+      states.map((states) => states[i]).filter(isBusy).length / states.length
+  ),
+  Array(m).map(
+    (_, i) =>
+      states.filter((states) => states.filter(isMemoryState).length > i)
+        .length / states.length
+  ),
+];
 
 export const machineStates = (
   tree: Tree,
@@ -49,7 +69,7 @@ export const machineStates = (
     while (isMemoryTooBusy(threads, m)) {
       const memoryThreads = threads
         .map((t, i) => [t, i])
-        .filter(([t, i]) => isMemoryState(t));
+        .filter(([t, i]) => isMemoryThreadState(t));
       const x = memoryThreads.slice(m, memoryThreads.length);
       x.forEach(([, i]) => (threads[i] = { state: "noop", time: 0 }));
       step();
@@ -64,10 +84,10 @@ export const machineStates = (
   // };
 
   const scheduleTask = (time: number): number => {
-    while (threads.every(isBusy) || isMemoryBusy(threads, m)) {
+    while (threads.every(isBusyThread) || isMemoryBusy(threads, m)) {
       step();
     }
-    let threadIndex = threads.findIndex((thread) => !isBusy(thread));
+    let threadIndex = threads.findIndex((thread) => !isBusyThread(thread));
     const id = taskId++;
     threads[threadIndex] = setupThread(time, id);
     return id;
@@ -91,8 +111,8 @@ export const machineStates = (
     const nodes: Tree[] = traverseTree([tree]);
 
     nodes.reverse().forEach((node) => {
-      if (threads.every(isBusy)) {
-        while (threads.some(isBusy)) {
+      if (threads.every(isBusyThread)) {
+        while (threads.some(isBusyThread)) {
           step();
         }
       }
@@ -103,7 +123,7 @@ export const machineStates = (
   // const id = processTree(tree);
   processTree(tree);
 
-  while (threads.some(isBusy)) {
+  while (threads.some(isBusyThread)) {
     step();
   }
   // if (id) waitTasks([id]);
