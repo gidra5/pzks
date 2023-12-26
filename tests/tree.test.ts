@@ -16,7 +16,7 @@ describe("parsing", () => {
       const exprTree = treeExpression(tree);
       console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
       // console.log(printTree(exprTree));
-      console.log(printTree(treeOptimizer(exprTree)[0]));
+      // console.log(printTree(treeOptimizer(exprTree)[0]));
       const optimizedTree = treeOptimizer(exprTree)[0];
       // let map = new FileMap();
       // const fileName = "test";
