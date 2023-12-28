@@ -1,3 +1,5 @@
+import { parseExpr } from "./parser";
+import { parseTokens } from "./tokens";
 import type {
   Boolean,
   Expression,
@@ -77,7 +79,10 @@ export const treePrefix = (item: Prefix): Tree => {
   const [value, operator] = item;
   const valueTree = treeValue(value);
   if (operator.length > 0) {
-    return operator.reduce((acc, item) => ({ children: [acc], name: item }), valueTree);
+    return operator.reduce(
+      (acc, item) => ({ children: [acc], name: item }),
+      valueTree
+    );
   }
   return valueTree;
 };
@@ -87,15 +92,56 @@ export const treeValue = (item: Value): Tree => {
   if (item.type === "str") return { name: `"${item.item}"`, type: "str" };
   // if (item.type === "name") return stringifyAccessExpression(item.item);
   if (item.type === "name") return { name: item.item, type: "name" };
-  if (item.type === "fn") return { name: item.item[0], children: item.item[1].map(treeExpression), type: "fn" };
+  if (item.type === "fn")
+    return {
+      name: item.item[0],
+      children: item.item[1].map(treeExpression),
+      type: "fn",
+    };
   return treeExpression(item.item);
 };
 
-export const treeCost = (item: Tree, costTable: Record<string, number> = {}): number => {
+export const treeCost = (
+  item: Tree,
+  costTable: Record<string, number> = {}
+): number => {
   if (!item.children) return 1;
   if (item.children.length === 0) return 1;
 
   const name = item.name;
   const cost = costTable[name] || 1;
-  return cost + item.children.reduce((acc, item) => acc + treeCost(item, costTable), 0);
+  return (
+    cost +
+    item.children.reduce((acc, item) => acc + treeCost(item, costTable), 0)
+  );
+};
+
+export const treeExprFromString = (src: string): Tree => {
+  const [tokens, _errors] = parseTokens(src);
+  const [, tree] = parseExpr()(tokens);
+  return treeExpression(tree);
+};
+export const stringFromTree = (tree: Tree) => {
+  if (tree.type === "fn" && tree.children) {
+    return tree.name + "(" + tree.children.map(stringFromTree).join(", ") + ")";
+  }
+  if (!tree.children) return tree.name;
+  if (tree.children.length === 0) return tree.name;
+  if (tree.name === "neg" && tree.children.length === 1)
+    return "-" + stringFromTree(tree.children[0]);
+  if (tree.children.length === 2) {
+    const left =
+      tree.children[0].children && tree.children[0].type !== "fn"
+        ? `(${stringFromTree(tree.children[0])})`
+        : stringFromTree(tree.children[0]);
+    const right =
+      tree.children[1].children && tree.children[1].type !== "fn"
+        ? `(${stringFromTree(tree.children[1])})`
+        : stringFromTree(tree.children[1]);
+    // const left = stringFromTree(tree.children[0]);
+    // const right = stringFromTree(tree.children[1]);
+    return `${left} ${tree.name} ${right}`;
+  }
+
+  return tree.name + "(" + tree.children.map(stringFromTree).join(", ") + ")";
 };

@@ -160,3 +160,66 @@ const treeVertexCount = (tree: Tree) =>
 
 export const calcLinearFraction = (expr: Tree) =>
   treeEdgeCount(expr) / treeVertexCount(expr);
+
+export const cachedIterable = <T>(
+  iterable: Iterable<T>
+): (() => Iterable<T>) => {
+  const cache: T[] | null = !Array.isArray(iterable) ? [] : null;
+  return () => {
+    if (!cache) return iterable;
+    if (cache.length > 0) return cache;
+    return (function* () {
+      for (const x of iterable) {
+        cache.push(x);
+        yield x;
+      }
+    })();
+  };
+};
+
+export function* product2<T, U>(a: Iterable<T>, b: Iterable<U>) {
+  const bCached = cachedIterable(b);
+  for (const x of a) {
+    for (const y of bCached()) {
+      yield [x, y];
+    }
+  }
+}
+
+export function* product3<T, T2, T3>(
+  a: Iterable<T>,
+  b: Iterable<T2>,
+  c: Iterable<T3>
+) {
+  const bCached = cachedIterable(b);
+  const cCached = cachedIterable(c);
+  for (const x of a) {
+    for (const y of bCached()) {
+      for (const z of cCached()) {
+        yield [x, y, z];
+      }
+    }
+  }
+}
+
+export function* product<T>(...args: Iterable<T>[]) {
+  if (args.length === 0) {
+    yield [];
+    return;
+  }
+  const [head, ...tail] = args;
+  const tailCached = tail.map(cachedIterable);
+  for (const x of head) {
+    for (const y of product(...tailCached.map((x) => x()))) {
+      yield [x, ...y];
+    }
+  }
+}
+
+export function* take<T>(n: number, iterable: Iterable<T>) {
+  for (const x of iterable) {
+    if (n <= 0) break;
+    yield x;
+    n--;
+  }
+}

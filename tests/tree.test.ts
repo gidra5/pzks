@@ -1,23 +1,17 @@
 import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
-import { parseExpr } from "../src/parser.js";
-import { parseTokens } from "../src/tokens.js";
-import { treeExpression } from "../src/tree.js";
-import { printTree } from "../src/utils.js";
+import { treeExprFromString } from "../src/tree.js";
 import { treeOptimizer } from "../src/optimizer.js";
+import { Tree, printTree } from "../src/utils.js";
 
 describe("parsing", () => {
   const testCase = (src, expectedTree, _it: any = it) =>
     _it(`optimizes tree in example '${src}'`, () => {
-      const [tokens, _errors] = parseTokens(src);
-      // console.log(tokens);
-
-      const [, tree] = parseExpr()(tokens);
-      const exprTree = treeExpression(tree);
-      console.dir({ tree: treeOptimizer(exprTree)[0] }, { depth: null });
+      const exprTree = treeExprFromString(src);
       // console.log(printTree(exprTree));
-      // console.log(printTree(treeOptimizer(exprTree)[0]));
       const optimizedTree = treeOptimizer(exprTree)[0];
+      // console.dir({ tree: optimizedTree }, { depth: null });
+      // console.log(printTree(optimizedTree));
       // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
@@ -28,6 +22,26 @@ describe("parsing", () => {
       expect(optimizedTree).toEqual(expectedTree);
       // expect(true).toEqual(false);
     });
+
+  // testCase("a-b*c+k", {
+  //   name: "-",
+  //   children: [
+  //     {
+  //       name: "+",
+  //       children: [
+  //         { name: "a", type: "name" },
+  //         { name: "k", type: "name" },
+  //       ],
+  //     },
+  //     {
+  //       children: [
+  //         { name: "b", type: "name" },
+  //         { name: "c", type: "name" },
+  //       ],
+  //       name: "*",
+  //     },
+  //   ],
+  // });
 
   testCase("a+b", {
     children: [
@@ -605,5 +619,55 @@ describe("parsing", () => {
         ],
       },
     ],
+  });
+
+  testCase("(A+B)+C/D+G+(K/L+M+N)", {
+    children: [
+      {
+        name: "+",
+        children: [
+          {
+            children: [
+              { name: "A", type: "name" },
+              { name: "B", type: "name" },
+            ],
+            name: "+",
+          },
+          {
+            name: "+",
+            children: [
+              {
+                children: [
+                  { name: "C", type: "name" },
+                  { name: "D", type: "name" },
+                ],
+                name: "/",
+              },
+              { name: "G", type: "name" },
+            ],
+          },
+        ],
+      },
+      {
+        name: "+",
+        children: [
+          {
+            children: [
+              { name: "K", type: "name" },
+              { name: "L", type: "name" },
+            ],
+            name: "/",
+          },
+          {
+            name: "+",
+            children: [
+              { name: "M", type: "name" },
+              { name: "N", type: "name" },
+            ],
+          },
+        ],
+      },
+    ],
+    name: "+",
   });
 });
