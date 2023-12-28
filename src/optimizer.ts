@@ -545,36 +545,34 @@ export function* generateAllAssociations(
 
   if (patternMatcher("_ - (_ + _)", item)) {
     const { a, b, c } = patternMatcherDict("a - (b + c)", item);
-    const canBalance = getDepth(a) < getDepth(item.children![1]);
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name: "-",
-        children: [
-          treeOptimizerStep({
-            name: "-",
-            children: [a, b],
-          }),
-          treeOptimizerStep(c),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "-", children: [a, { name: "+", children: [b, c] }] };
+      yield { name: "+", children: [{ name: "-", children: [a, b] }, c] };
+    }
   }
 
   if (patternMatcher("_ - (_ - _)", item)) {
     const { a, b, c } = patternMatcherDict("a - (b - c)", item);
-    const canBalance = getDepth(a) < getDepth(item.children![1]);
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name: "+",
-        children: [
-          treeOptimizerStep({
-            name: "-",
-            children: [a, b],
-          }),
-          treeOptimizerStep(c),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "-", children: [a, { name: "-", children: [b, c] }] };
+      yield { name: "+", children: [{ name: "-", children: [a, c] }, b] };
+    }
   }
 
   if (
@@ -582,19 +580,18 @@ export function* generateAllAssociations(
     patternMatcher("_ * (_ * _)", item)
   ) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
-    const canBalance = getDepth(a) < getDepth(item.children![1]);
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name: item.name,
-        children: [
-          treeOptimizerStep({
-            name,
-            children: [a, b],
-          }),
-          treeOptimizerStep(c),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name, children: [a, { name, children: [b, c] }] };
+      yield { name, children: [{ name, children: [a, b] }, c] };
+    }
   }
 
   if (
@@ -602,87 +599,82 @@ export function* generateAllAssociations(
     patternMatcher("(_ * _) * _", item)
   ) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name,
-        children: [
-          treeOptimizerStep(a),
-          treeOptimizerStep({
-            name: item.name,
-            children: [b, c],
-          }),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name, children: [a, { name, children: [b, c] }] };
+      yield { name, children: [{ name, children: [a, b] }, c] };
+    }
   }
 
   if (patternMatcher("(_ - _) - _", item)) {
-    const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name,
-        children: [
-          treeOptimizerStep(a),
-          treeOptimizerStep({
-            name: "+",
-            children: [b, c],
-          }),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "-", children: [a, { name: "+", children: [b, c] }] };
+      yield { name: "-", children: [{ name: "-", children: [a, b] }, c] };
+    }
   }
 
   if (patternMatcher("(_ - _) + _", item)) {
-    const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name,
-        children: [
-          treeOptimizerStep(a),
-          treeOptimizerStep({
-            name: "-",
-            children: [b, c],
-          }),
-        ],
-      };
+    for (const [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "-", children: [a, { name: "-", children: [b, c] }] };
+      yield { name: "+", children: [{ name: "-", children: [a, b] }, c] };
+    }
   }
 
   if (patternMatcher("(_ + _) - _", item)) {
-    const [{ name, children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
+    const [{ children: [a, b] = [] }, c] = item.children!;
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name,
-        children: [
-          treeOptimizerStep(a),
-          treeOptimizerStep({
-            name: "-",
-            children: [b, c],
-          }),
-        ],
-      };
+    for (let [a, b, c] of product3(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "+", children: [a, { name: "-", children: [b, c] }] };
+      yield { name: "-", children: [{ name: "+", children: [a, b] }, c] };
+    }
   }
 
   if (patternMatcher("(_ / _) / _", item)) {
     const [{ children: [a, b] = [] }, c] = item.children!;
-    const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
+    const aAssociations = generateAllAssociations(a);
+    const bAssociations = generateAllAssociations(b);
+    const cAssociations = generateAllAssociations(c);
 
-    if (canBalance)
-      return {
-        name: "/",
-        children: [
-          treeOptimizerStep(a),
-          treeOptimizerStep({
-            name: "*",
-            children: [b, c],
-          }),
-        ],
-      };
+    for (const [a, b, c] of product(
+      aAssociations,
+      bAssociations,
+      cAssociations
+    )) {
+      yield { name: "/", children: [{ name: "/", children: [a, b] }, c] };
+      yield { name: "/", children: [a, { name: "*", children: [c, b] }] };
+    }
   }
 
   if (item.children) {
@@ -726,6 +718,21 @@ export function* generateAllFactorizationCommutations(
 ): Generator<Tree, any, undefined> {
   for (const tree of generateAllFactorizations(item)) {
     yield* generateAllCommutations(tree);
+  }
+}
+export function* generateAllFactorizationCommutationsAssociations(
+  item: Tree
+): Generator<Tree, any, undefined> {
+  for (const tree of generateAllAssociations(item)) {
+    yield* generateAllFactorizationCommutations(tree);
+  }
+}
+
+export function* generateAllFactorizationCommutationsAssociations2(
+  item: Tree
+): Generator<Tree, any, undefined> {
+  for (const tree of generateAllDistributions(item)) {
+    yield* generateAllFactorizationCommutationsAssociations(tree);
   }
 }
 

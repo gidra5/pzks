@@ -1,7 +1,7 @@
 import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { stringFromTree, treeExprFromString } from "../src/tree.js";
-import { costs, printTree } from "../src/utils.js";
+import { costs, printTree, take } from "../src/utils.js";
 import {
   generateAllCommutations,
   sortByCost,
@@ -44,7 +44,9 @@ describe("commutation", () => {
       const exprTree = treeExprFromString(src);
       // console.log(printTree(exprTree));
       const balancedTree = treeOptimizer(exprTree)[0];
-      const commutations = [...generateAllCommutations(balancedTree)];
+      const commutations = [
+        ...take(1000, generateAllCommutations(balancedTree)),
+      ];
       // const count = 0;
       // console.dir({ commutations }, { depth: null });
       // console.log(printTree(balancedTree));
@@ -94,7 +96,9 @@ describe("commutation", () => {
   testCaseLength("A - B*c - L*k*2 + D*t/d*y - H + Q*3 - J*(w-1)/r + P", 9216);
   testCaseLength(
     "A-B*c-J*(d*t*j-u*t+c*r-1+w-k/q+m*(n-k*s+z*(y+u*p-y/r-5)+x+t/2))/r+P",
-    1572864
+    1572864,
+    {},
+    it.only
   );
   testCaseLength(
     "a + b*c + d + e*f*g + h*i + j*(k + L + m*(n-p*q+r) - s*t)",

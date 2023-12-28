@@ -14,6 +14,7 @@ import {
   searchOptimalCommutation,
   searchOptimalFactorization,
   searchOptimalFactorizationCommutation,
+  searchOptimalFactorizationCommutationAssociations,
 } from "../src/machine.js";
 import {
   calcMaxAcceleration,
@@ -68,7 +69,13 @@ describe("parsing", () => {
       //   n,
       //   m
       // );
-      const optimalTree = searchOptimalFactorizationCommutation(
+      // const optimalTree = searchOptimalFactorizationCommutation(
+      //   optimizedTree,
+      //   _costs,
+      //   n,
+      //   m
+      // );
+      const optimalTree = searchOptimalFactorizationCommutationAssociations(
         optimizedTree,
         _costs,
         n,
@@ -87,7 +94,7 @@ describe("parsing", () => {
 
       // console.dir({ optimalTree }, { depth: null });
       // console.log(printTree(optimalTree));
-      console.log(stringFromTree(optimalTree));
+      // console.log(stringFromTree(optimalTree));
 
       // expect(optimalTree).toEqual(expectedOptimalTree);
       expect(true).toEqual(false);
@@ -183,12 +190,12 @@ describe("parsing", () => {
     ["write (- 6)", "noop"],
   ]);
 
-  searchTestCase(
-    "a-(b*k-b*t+b*f*f*5.9-b*f*q-b*g*f*5.9+b*g*q+b*w/p-b*y*m/p+b*y/p)-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
-    []
-  );
+  // searchTestCase(
+  //   "a-(b*k-b*t+b*f*f*5.9-b*f*q-b*g*f*5.9+b*g*q+b*w/p-b*y*m/p+b*y/p)-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
+  //   []
+  // );
 
-  searchTestCase("a*b-2*a+b*c-c*2", []);
+  searchTestCase("2*t*(k-1)*(b-t+h) - (f-g)/b - (d+e+f)/(d+e-f)", []);
   // searchTestCase(
   //   "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
   //   []

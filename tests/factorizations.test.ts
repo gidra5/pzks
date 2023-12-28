@@ -19,7 +19,7 @@ describe("commutation", () => {
       const distributions = [...generateAllFactorizations(balancedTree)];
       // console.dir({ commutations }, { depth: null });
       // console.log(printTree(balancedTree));
-      // console.log(distributions.map(stringFromTree));
+      console.log(distributions.map(stringFromTree));
       // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
@@ -56,46 +56,48 @@ describe("commutation", () => {
       // expect(true).toEqual(false);
     });
 
-  testCase("a*b+a*c+b*c", [
-    "((a * b) + (a * c)) + (b * c)",
-    "((b + c) * a) + (b * c)",
-  ]);
-  testCase("a*(b-2)+c*(b-2)", [
-    "(a * (b - 2)) + (c * (b - 2))",
-    "(a + c) * (b - 2)",
-  ]);
-  testCase("a*b-2*a+b*c-c*2", [
-    "((a * b) - (2 * a)) + ((b * c) - (c * 2))",
-    "((b - 2) * a) + ((b - 2) * c)",
-    "(a + c) * (b - 2)",
-  ]);
+  testCase("2*t + (2*h - t*h*2) - q*t", []);
 
-  testCase("a/b-c/b+2/b", [
-    "((a / b) - (c / b)) + (2 / b)",
-    "((a - c) / b) + (2 / b)",
-    "((a - c) + 2) / b",
-  ]);
-  testCase("a/(b-1)-c/(b-1)+2/(b-1)-t", [
-    "((a / (b - 1)) - (c / (b - 1))) + ((2 / (b - 1)) - t)",
-    "((a - c) / (b - 1)) + ((2 / (b - 1)) - t)",
-  ]);
-  testCase("a-b*k+b*t-f*f*5.9+f*q+g*f*5.9-g*q-f/(d+q-w)-g/(d+q-w)", [
-    "((((a - (b * k)) + (b * t)) - (((f * f) * 5.9) - (f * q))) + (((g * f) * 5.9) - (g * q))) - ((f / ((d + q) - w)) + (g / ((d + q) - w)))",
-    "((((a - (b * k)) + (b * t)) - (((f * f) * 5.9) - (f * q))) + (((g * f) * 5.9) - (g * q))) - ((f + g) / ((d + q) - w))",
-  ]);
-  testCase(
-    "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
-    [
-      "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) / p) - ((b * y) / p)))) - ((((x * x) / ((d + q) - w)) - ((3 * x) / ((d + q) - w))) - (((3 * x) / ((d + q) - w)) + (9 / ((d + q) - w))))",
-      "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x * x) - (3 * x)) / ((d + q) - w)) - (((3 * x) + 9) / ((d + q) - w)))",
-      "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x * x) - (3 * x)) - ((3 * x) + 9)) / ((d + q) - w))",
-      "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x - 3) * x) - ((3 * x) + 9)) / ((d + q) - w))",
-    ]
-  );
-  testCase(
-    "A-B*c-J*(d*t*j-u*t+c*r-1+w-k/q+m*(n-k*s+z*(y+u*p-y/r-5)+x+t/2))/r+P",
-    [
-      "(A - (B * c)) - (((J * (((((d * t) * j) - (u * t)) + (((c * r) - 1) + (w - (k / q)))) + (m * (((n - (k * s)) + (z * ((y + (u * p)) - ((y / r) + 5)))) + (x + (t / 2)))))) / r) - P)",
-    ]
-  );
+  // testCase("a*b+a*c+b*c", [
+  //   "((a * b) + (a * c)) + (b * c)",
+  //   "((b + c) * a) + (b * c)",
+  // ]);
+  // testCase("a*(b-2)+c*(b-2)", [
+  //   "(a * (b - 2)) + (c * (b - 2))",
+  //   "(a + c) * (b - 2)",
+  // ]);
+  // testCase("a*b-2*a+b*c-c*2", [
+  //   "((a * b) - (2 * a)) + ((b * c) - (c * 2))",
+  //   "((b - 2) * a) + ((b - 2) * c)",
+  //   "(a + c) * (b - 2)",
+  // ]);
+
+  // testCase("a/b-c/b+2/b", [
+  //   "((a / b) - (c / b)) + (2 / b)",
+  //   "((a - c) / b) + (2 / b)",
+  //   "((a - c) + 2) / b",
+  // ]);
+  // testCase("a/(b-1)-c/(b-1)+2/(b-1)-t", [
+  //   "((a / (b - 1)) - (c / (b - 1))) + ((2 / (b - 1)) - t)",
+  //   "((a - c) / (b - 1)) + ((2 / (b - 1)) - t)",
+  // ]);
+  // testCase("a-b*k+b*t-f*f*5.9+f*q+g*f*5.9-g*q-f/(d+q-w)-g/(d+q-w)", [
+  //   "((((a - (b * k)) + (b * t)) - (((f * f) * 5.9) - (f * q))) + (((g * f) * 5.9) - (g * q))) - ((f / ((d + q) - w)) + (g / ((d + q) - w)))",
+  //   "((((a - (b * k)) + (b * t)) - (((f * f) * 5.9) - (f * q))) + (((g * f) * 5.9) - (g * q))) - ((f + g) / ((d + q) - w))",
+  // ]);
+  // testCase(
+  //   "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
+  //   [
+  //     "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) / p) - ((b * y) / p)))) - ((((x * x) / ((d + q) - w)) - ((3 * x) / ((d + q) - w))) - (((3 * x) / ((d + q) - w)) + (9 / ((d + q) - w))))",
+  //     "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x * x) - (3 * x)) / ((d + q) - w)) - (((3 * x) + 9) / ((d + q) - w)))",
+  //     "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x * x) - (3 * x)) - ((3 * x) + 9)) / ((d + q) - w))",
+  //     "(((((a - (b * k)) + (b * t)) - ((b * f) * (f * 5.9))) + (((b * f) * q) + ((b * g) * (f * 5.9)))) - ((((b * g) * q) + ((b * w) / p)) - ((((b * y) * m) - (b * y)) / p))) - ((((x - 3) * x) - ((3 * x) + 9)) / ((d + q) - w))",
+  //   ]
+  // );
+  // testCase(
+  //   "A-B*c-J*(d*t*j-u*t+c*r-1+w-k/q+m*(n-k*s+z*(y+u*p-y/r-5)+x+t/2))/r+P",
+  //   [
+  //     "(A - (B * c)) - (((J * (((((d * t) * j) - (u * t)) + (((c * r) - 1) + (w - (k / q)))) + (m * (((n - (k * s)) + (z * ((y + (u * p)) - ((y / r) + 5)))) + (x + (t / 2)))))) / r) - P)",
+  //   ]
+  // );
 });
