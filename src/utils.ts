@@ -35,15 +35,10 @@ const getPrefix = (level: boolean, i: number, levels: boolean[]) => {
   return prefix + _padding + " ";
 };
 export type Tree = { name: string; children?: Tree[]; type?: string };
-export const printTree = (
-  { name, children = [] }: Tree,
-  levels: boolean[] = []
-): string => {
-  let x = levels.map(getPrefix).join("") + name;
+export const printTree = ({ name, children = [], label }: Tree & { label?: string }, levels: boolean[] = []): string => {
+  let x = levels.map(getPrefix).join("") + (label ?? name);
 
-  const rest = children
-    .map((child, i) => printTree(child, [...levels, i === children.length - 1]))
-    .join("");
+  const rest = children.map((child, i) => printTree(child, [...levels, i === children.length - 1])).join("");
   return x + "\n" + rest;
 };
 

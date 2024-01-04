@@ -1,13 +1,5 @@
-import {
-  generateAllCommutations,
-  generateAllFactorizationCommutations,
-  generateAllFactorizationCommutationsAssociations,
-  generateAllFactorizationCommutationsAssociations2,
-  generateAllFactorizations,
-} from "./optimizer";
-import { stringFromTree } from "./tree";
 import { CostTable } from "./types";
-import { Tree, printTree, take } from "./utils";
+import { Tree } from "./utils";
 
 type State = "compute" | "read" | "write" | "noop";
 type ThreadState = {
@@ -18,18 +10,12 @@ type ThreadState = {
 };
 
 const nextThreadState = (threadState: ThreadState): ThreadState => {
-  if (threadState.state === "noop" || threadState.state === "write")
-    return { state: "noop", time: 0 };
+  if (threadState.state === "noop" || threadState.state === "write") return { state: "noop", time: 0 };
   if (threadState.state === "read") return { ...threadState, state: "compute" };
-  if (threadState.state === "compute" && threadState.time === 1)
-    return { ...threadState, state: "write", time: 0 };
+  if (threadState.state === "compute" && threadState.time === 1) return { ...threadState, state: "write", time: 0 };
   return { ...threadState, time: threadState.time - 1 };
 };
-const setupThread = (
-  time: number,
-  taskId: number,
-  label: string
-): ThreadState => ({
+const setupThread = (time: number, taskId: number, label: string): ThreadState => ({
   state: "read",
   time,
   taskId,
@@ -37,68 +23,39 @@ const setupThread = (
 });
 
 const isBusy = (state: State): boolean => !state.includes("noop");
-const isMemoryState = (state: State): boolean =>
-  state.includes("read") || state.includes("write");
+const isMemoryState = (state: State): boolean => state.includes("read") || state.includes("write");
 
-const isBusyThread = (threadState: ThreadState): boolean =>
-  threadState.state !== "noop";
+const isBusyThread = (threadState: ThreadState): boolean => threadState.state !== "noop";
 const isMemoryThreadState = (threadState: ThreadState): boolean =>
   threadState.state === "read" || threadState.state === "write";
-const isMemoryBusy = (
-  threadStates: ThreadState[],
-  maxBusyThreads: number
-): boolean => threadStates.filter(isMemoryThreadState).length >= maxBusyThreads;
-const isMemoryTooBusy = (
-  threadStates: ThreadState[],
-  maxBusyThreads: number
-): boolean => threadStates.filter(isMemoryThreadState).length > maxBusyThreads;
+const isMemoryBusy = (threadStates: ThreadState[], maxBusyThreads: number): boolean =>
+  threadStates.filter(isMemoryThreadState).length >= maxBusyThreads;
+const isMemoryTooBusy = (threadStates: ThreadState[], maxBusyThreads: number): boolean =>
+  threadStates.filter(isMemoryThreadState).length > maxBusyThreads;
 
-export const calculateLoad = (
-  states: State[][],
-  n: number,
-  m: number
-): [number[], number[]] => {
+export const calculateLoad = (states: State[][], n: number, m: number): [number[], number[]] => {
   return [
     Array(n)
       .fill(0)
-      .map(
-        (_, i) =>
-          states.map((states) => states[i]).filter(isBusy).length /
-          states.length
-      ),
+      .map((_, i) => states.map((states) => states[i]).filter(isBusy).length / states.length),
     Array(m)
       .fill(0)
-      .map(
-        (_, i) =>
-          states.filter((states) => states.filter(isMemoryState).length > i)
-            .length / states.length
-      ),
+      .map((_, i) => states.filter((states) => states.filter(isMemoryState).length > i).length / states.length),
   ];
 };
 
-export const machineStates = (
-  tree: Tree,
-  costTable: CostTable,
-  n = 2,
-  m = 1
-): State[][] => {
+export const machineStates = (tree: Tree, costTable: CostTable, n = 2, m = 1): State[][] => {
   const states: State[][] = [];
   let threads = Array(n).fill({ state: "noop", time: 0 });
   let taskId = 1;
   const snapshot = () => {
-    states.push(
-      threads.map((thread) =>
-        thread.label ? `${thread.state} (${thread.label})` : thread.state
-      )
-    );
+    states.push(threads.map((thread) => (thread.label ? `${thread.state} (${thread.label})` : thread.state)));
   };
   const step = () => {
     snapshot();
     threads = threads.map(nextThreadState);
     while (isMemoryTooBusy(threads, m)) {
-      const memoryThreads = threads
-        .map((t, i) => [t, i])
-        .filter(([t, i]) => isMemoryThreadState(t));
+      const memoryThreads = threads.map((t, i) => [t, i]).filter(([t, i]) => isMemoryThreadState(t));
       const x = memoryThreads.slice(m, memoryThreads.length);
       x.forEach(([, i]) => (threads[i] = { state: "noop", time: 0 }));
       step();
@@ -164,206 +121,4 @@ export const machineStates = (
   // if (id) waitTasks([id]);
 
   return states;
-};
-
-export const searchOptimalCommutation = (
-  tree: Tree,
-  costTable: CostTable,
-  n = 2,
-  m = 1
-): Tree => {
-  let currentOptimal = tree;
-  let currentOptimalStates = machineStates(currentOptimal, costTable, n, m);
-  console.log("currentOptimalStates", currentOptimalStates);
-
-  for (const commutation of generateAllCommutations(tree)) {
-    const states = machineStates(commutation, costTable, n, m);
-    if (states.length < currentOptimalStates.length) {
-      currentOptimal = commutation;
-      currentOptimalStates = states;
-      const [load, memory] = calculateLoad(states, n, m);
-      console.log(stringFromTree(commutation), {
-        time: currentOptimalStates.length,
-        load,
-        memory,
-      });
-    }
-    if (states.length === currentOptimalStates.length) {
-      const [load, memory] = calculateLoad(states, n, m);
-      const [currentLoad, currentMemory] = calculateLoad(
-        currentOptimalStates,
-        n,
-        m
-      );
-      if (
-        load.every((l, i) => l >= currentLoad[i]) &&
-        memory.every((l, i) => l >= currentMemory[i]) &&
-        load.some((l, i) => l > currentLoad[i]) &&
-        memory.some((l, i) => l > currentMemory[i])
-      ) {
-        currentOptimal = commutation;
-        currentOptimalStates = states;
-        console.log(stringFromTree(commutation), {
-          time: currentOptimalStates.length,
-          load,
-          memory,
-        });
-      }
-    }
-  }
-
-  return currentOptimal;
-};
-
-export const searchOptimalFactorization = (
-  tree: Tree,
-  costTable: CostTable,
-  n = 2,
-  m = 1
-): Tree => {
-  let currentOptimal = tree;
-  let currentOptimalStates = machineStates(currentOptimal, costTable, n, m);
-  const [load, memory] = calculateLoad(currentOptimalStates, n, m);
-  console.log(stringFromTree(currentOptimal), {
-    time: currentOptimalStates.length,
-    load,
-    memory,
-  });
-
-  for (const commutation of [...generateAllFactorizations(tree)]) {
-    const states = machineStates(commutation, costTable, n, m);
-    const [load, memory] = calculateLoad(states, n, m);
-    console.log(stringFromTree(commutation), {
-      time: states.length,
-      load,
-      memory,
-    });
-    if (states.length < currentOptimalStates.length) {
-      currentOptimal = commutation;
-      currentOptimalStates = states;
-      console.log("better");
-    }
-    if (states.length === currentOptimalStates.length) {
-      const [currentLoad, currentMemory] = calculateLoad(
-        currentOptimalStates,
-        n,
-        m
-      );
-      const loadSum = load.reduce((acc, l) => acc + l, 0);
-      const currentLoadSum = currentLoad.reduce((acc, l) => acc + l, 0);
-      const memorySum = memory.reduce((acc, l) => acc + l, 0);
-      const currentMemorySum = currentMemory.reduce((acc, l) => acc + l, 0);
-      if (loadSum > currentLoadSum && memorySum > currentMemorySum) {
-        currentOptimal = commutation;
-        currentOptimalStates = states;
-        console.log("better");
-      }
-    }
-  }
-
-  return currentOptimal;
-};
-
-export const searchOptimalFactorizationCommutation = (
-  tree: Tree,
-  costTable: CostTable,
-  n = 2,
-  m = 1,
-  count = 1000
-): Tree => {
-  let currentOptimal = tree;
-  let currentOptimalStates = machineStates(currentOptimal, costTable, n, m);
-  const [load, memory] = calculateLoad(currentOptimalStates, n, m);
-  console.log(stringFromTree(currentOptimal), {
-    time: currentOptimalStates.length,
-    load,
-    memory,
-  });
-
-  for (const commutation of [
-    ...take(count, generateAllFactorizationCommutations(tree)),
-  ]) {
-    const states = machineStates(commutation, costTable, n, m);
-    const [load, memory] = calculateLoad(states, n, m);
-    console.log(stringFromTree(commutation), {
-      time: states.length,
-      load,
-      memory,
-    });
-    if (states.length < currentOptimalStates.length) {
-      currentOptimal = commutation;
-      currentOptimalStates = states;
-      console.log("better");
-    }
-    if (states.length === currentOptimalStates.length) {
-      const [currentLoad, currentMemory] = calculateLoad(
-        currentOptimalStates,
-        n,
-        m
-      );
-      const loadSum = load.reduce((acc, l) => acc + l, 0);
-      const currentLoadSum = currentLoad.reduce((acc, l) => acc + l, 0);
-      const memorySum = memory.reduce((acc, l) => acc + l, 0);
-      const currentMemorySum = currentMemory.reduce((acc, l) => acc + l, 0);
-      if (loadSum > currentLoadSum && memorySum > currentMemorySum) {
-        currentOptimal = commutation;
-        currentOptimalStates = states;
-        console.log("better");
-      }
-    }
-  }
-
-  return currentOptimal;
-};
-
-export const searchOptimalFactorizationCommutationAssociations = (
-  tree: Tree,
-  costTable: CostTable,
-  n = 2,
-  m = 1,
-  count = 1000
-): Tree => {
-  let currentOptimal = tree;
-  let currentOptimalStates = machineStates(currentOptimal, costTable, n, m);
-  const [load, memory] = calculateLoad(currentOptimalStates, n, m);
-  console.log(stringFromTree(currentOptimal), {
-    time: currentOptimalStates.length,
-    load,
-    memory,
-  });
-
-  for (const commutation of [
-    ...take(count, generateAllFactorizationCommutationsAssociations2(tree)),
-  ]) {
-    const states = machineStates(commutation, costTable, n, m);
-    const [load, memory] = calculateLoad(states, n, m);
-    console.log(stringFromTree(commutation), {
-      time: states.length,
-      load,
-      memory,
-    });
-    if (states.length < currentOptimalStates.length) {
-      currentOptimal = commutation;
-      currentOptimalStates = states;
-      console.log("better");
-    }
-    if (states.length === currentOptimalStates.length) {
-      const [currentLoad, currentMemory] = calculateLoad(
-        currentOptimalStates,
-        n,
-        m
-      );
-      const loadSum = load.reduce((acc, l) => acc + l, 0);
-      const currentLoadSum = currentLoad.reduce((acc, l) => acc + l, 0);
-      const memorySum = memory.reduce((acc, l) => acc + l, 0);
-      const currentMemorySum = currentMemory.reduce((acc, l) => acc + l, 0);
-      if (loadSum > currentLoadSum && memorySum > currentMemorySum) {
-        currentOptimal = commutation;
-        currentOptimalStates = states;
-        console.log("better");
-      }
-    }
-  }
-
-  return currentOptimal;
 };

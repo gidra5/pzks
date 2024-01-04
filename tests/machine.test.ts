@@ -8,31 +8,13 @@ import {
   treeExpression,
 } from "../src/tree.js";
 import { treeOptimizer } from "../src/optimizer.js";
-import {
-  calculateLoad,
-  machineStates,
-  searchOptimalCommutation,
-  searchOptimalFactorization,
-  searchOptimalFactorizationCommutation,
-  searchOptimalFactorizationCommutationAssociations,
-} from "../src/machine.js";
-import {
-  calcMaxAcceleration,
-  calcLinearFraction,
-  costs,
-  printTree,
-} from "../src/utils.js";
+import { calculateLoad, machineStates } from "../src/machine.js";
+import { calcMaxAcceleration, calcLinearFraction, costs, printTree, Tree } from "../src/utils.js";
 import { CostTable } from "../src/types.js";
+import { searchOptimalFactorizationCommutationAssociations } from "../src/search.js";
 
 describe("parsing", () => {
-  const testCase = (
-    src,
-    expectedStates,
-    _costs: CostTable = costs,
-    n = 2,
-    m = 1,
-    _it: any = it
-  ) =>
+  const testCase = (src, expectedStates, _costs: CostTable = costs, n = 2, m = 1, _it: any = it) =>
     _it(`simulates tree in example '${src}'`, () => {
       const exprTree = treeExprFromString(src);
       const optimizedTree = treeOptimizer(exprTree)[0];
@@ -51,14 +33,7 @@ describe("parsing", () => {
       expect(states).toEqual(expectedStates);
     });
 
-  const searchTestCase = (
-    src,
-    expectedOptimalTree,
-    _costs: CostTable = costs,
-    n = 2,
-    m = 1,
-    _it: any = it
-  ) =>
+  const searchTestCase = (src, expectedOptimalTree, _costs: CostTable = costs, n = 2, m = 1, _it: any = it) =>
     _it(`finds optimal tree in example '${src}'`, () => {
       const exprTree = treeExprFromString(src);
       const optimizedTree = treeOptimizer(exprTree)[0];
@@ -75,12 +50,7 @@ describe("parsing", () => {
       //   n,
       //   m
       // );
-      const optimalTree = searchOptimalFactorizationCommutationAssociations(
-        optimizedTree,
-        _costs,
-        n,
-        m
-      );
+      const optimalTree = searchOptimalFactorizationCommutationAssociations(optimizedTree, _costs, n, m);
       // const linearFraction = calcLinearFraction(optimizedTree);
       // const accelerationCoef = calcMaxAcceleration(linearFraction, n);
       // console.log({
@@ -195,7 +165,8 @@ describe("parsing", () => {
   //   []
   // );
 
-  searchTestCase("2*t*(k-1)*(b-t+h) - (f-g)/b - (d+e+f)/(d+e-f)", []);
+  // searchTestCase("2*t*(k-1)*(b-t+h) - (f-g)/b - (d+e+f)/(d+e-f)", []);
+  searchTestCase("a*b-2*a+b*c-c*2", []);
   // searchTestCase(
   //   "a-b*k+b*t-b*f*f*5.9+b*f*q+b*g*f*5.9-b*g*q-b*w/p+b*y*m/p-b*y/p-x*x/(d+q-w)+3*x/(d+q-w)+3*x/(d+q-w)+3*3/(d+q-w)",
   //   []
