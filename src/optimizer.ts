@@ -3,6 +3,8 @@ import { treeCost, treeExpression } from "./tree.js";
 import { parseTokens } from "./tokens.js";
 import { isEqual, product, product2, product3, type Tree } from "./utils";
 import { CostTable } from "./types.js";
+import { generateAllCommutations } from "./commutations.js";
+import { generateAllFactorizations } from "./factorizations.js";
 
 export const iterate =
   <T>(f: (x: T) => T, maxIterations = 10) =>
@@ -76,10 +78,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
       };
   }
 
-  if (
-    patternMatcher("_ + (_ + _)", item) ||
-    patternMatcher("_ * (_ * _)", item)
-  ) {
+  if (patternMatcher("_ + (_ + _)", item) || patternMatcher("_ * (_ * _)", item)) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
     const canBalance = getDepth(a) < getDepth(item.children![1]);
 
@@ -96,10 +95,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
       };
   }
 
-  if (
-    patternMatcher("(_ + _) + _", item) ||
-    patternMatcher("(_ * _) * _", item)
-  ) {
+  if (patternMatcher("(_ + _) + _", item) || patternMatcher("(_ * _) * _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
     const canBalance = getDepth(item.children![0]) > getDepth(c) + 1;
 
@@ -206,11 +202,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
   if (patternMatcher("_-0", item)) {
     return item.children![0];
   }
-  if (
-    patternMatcher("0*_", item) ||
-    patternMatcher("_*0", item) ||
-    patternMatcher("0/_", item)
-  ) {
+  if (patternMatcher("0*_", item) || patternMatcher("_*0", item) || patternMatcher("0/_", item)) {
     return { name: "0", type: "num" };
   }
   // if (patternMatcher("_/0", item)) {
@@ -242,37 +234,27 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     return { name: "1", type: "num" };
   }
 
-  if (
-    item.children &&
-    item.children.filter(({ type }) => type === "num").length > 1
-  ) {
+  if (item.children && item.children.filter(({ type }) => type === "num").length > 1) {
     const op = item.name;
 
     if (op === "+") {
-      const value =
-        Number(item.children![0].name) + Number(item.children![1].name);
+      const value = Number(item.children![0].name) + Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "-") {
-      const value =
-        Number(item.children![0].name) - Number(item.children![1].name);
+      const value = Number(item.children![0].name) - Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "*") {
-      const value =
-        Number(item.children![0].name) * Number(item.children![1].name);
+      const value = Number(item.children![0].name) * Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "/" && Number(item.children![1].name) !== 0) {
-      const value =
-        Number(item.children![0].name) / Number(item.children![1].name);
+      const value = Number(item.children![0].name) / Number(item.children![1].name);
       return { name: `${value}`, type: "num" };
     }
     if (op === "^") {
-      const value = Math.pow(
-        Number(item.children![0].name),
-        Number(item.children![1].name)
-      );
+      const value = Math.pow(Number(item.children![0].name), Number(item.children![1].name));
       return { name: `${value}`, type: "num" };
     }
   }
@@ -328,180 +310,40 @@ export const sortByCostStep =
     return item;
   };
 
-export function* generateAllCommutations(
-  item: Tree
-): Generator<Tree, any, undefined> {
-  if (patternMatcher("_ + _", item) || patternMatcher("_ * _", item)) {
-    const [a, b] = item.children!;
-    const aCommutations = [...generateAllCommutations(a)];
-    const bCommutations = [...generateAllCommutations(b)];
-
-    for (const [a, b] of product2(aCommutations, bCommutations)) {
-      yield { ...item, children: [a, b] };
-      yield { ...item, children: [b, a] };
-    }
-
-    return;
-  }
-
-  if (patternMatcher("(_ - _) - _", item)) {
-    const { a, b, c } = patternMatcherDict("(a - b) - c", item);
-    const aCommutations = generateAllCommutations(a);
-    const bCommutations = generateAllCommutations(b);
-    const cCommutations = generateAllCommutations(c);
-
-    for (const [a, b, c] of product3(
-      aCommutations,
-      bCommutations,
-      cCommutations
-    )) {
-      const negB = { name: "neg", children: [b] };
-      const negC = { name: "neg", children: [c] };
-
-      yield { name: "-", children: [{ name: "-", children: [a, b] }, c] };
-      yield { name: "-", children: [{ name: "-", children: [a, c] }, b] };
-      yield { name: "-", children: [{ name: "+", children: [negB, a] }, c] };
-      yield { name: "+", children: [{ name: "-", children: [negB, c] }, a] };
-      yield { name: "+", children: [{ name: "-", children: [negC, b] }, a] };
-      yield { name: "-", children: [{ name: "+", children: [negC, a] }, b] };
-    }
-    return;
-  }
-
-  if (patternMatcher("(_ / _) / _", item)) {
-    const { a, b, c } = patternMatcherDict("(a / b) / c", item);
-    const aCommutations = generateAllCommutations(a);
-    const bCommutations = generateAllCommutations(b);
-    const cCommutations = generateAllCommutations(c);
-
-    for (const [a, b, c] of product3(
-      aCommutations,
-      bCommutations,
-      cCommutations
-    )) {
-      const invB = { name: "/", children: [{ name: "1", type: "num" }, b] };
-      const invC = { name: "/", children: [{ name: "1", type: "num" }, c] };
-
-      yield { name: "/", children: [{ name: "/", children: [a, b] }, c] };
-      yield { name: "/", children: [{ name: "/", children: [a, c] }, b] };
-      yield { name: "/", children: [{ name: "*", children: [invB, a] }, c] };
-      yield { name: "*", children: [{ name: "/", children: [invB, c] }, a] };
-      yield { name: "*", children: [{ name: "/", children: [invC, b] }, a] };
-      yield { name: "/", children: [{ name: "*", children: [invC, a] }, b] };
-    }
-    return;
-  }
-
-  if (patternMatcher("_ - (_ - _)", item)) {
-    const { a, b, c } = patternMatcherDict("a - (b - c)", item);
-    const aCommutations = generateAllCommutations(a);
-    const bCommutations = generateAllCommutations(b);
-    const cCommutations = generateAllCommutations(c);
-
-    for (const [a, b, c] of product3(
-      aCommutations,
-      bCommutations,
-      cCommutations
-    )) {
-      const negB = { name: "neg", children: [b] };
-
-      yield { name: "-", children: [a, { name: "-", children: [b, c] }] };
-      yield { name: "+", children: [a, { name: "-", children: [c, b] }] };
-      yield { name: "+", children: [negB, { name: "+", children: [a, c] }] };
-      yield { name: "+", children: [negB, { name: "+", children: [c, a] }] };
-      yield { name: "-", children: [c, { name: "-", children: [b, a] }] };
-      yield { name: "+", children: [c, { name: "-", children: [a, b] }] };
-    }
-
-    return;
-  }
-
-  if (patternMatcher("_ / (_ / _)", item)) {
-    const { a, b, c } = patternMatcherDict("a / (b / c)", item);
-    const aCommutations = generateAllCommutations(a);
-    const bCommutations = generateAllCommutations(b);
-    const cCommutations = generateAllCommutations(c);
-
-    for (const [a, b, c] of product3(
-      aCommutations,
-      bCommutations,
-      cCommutations
-    )) {
-      const invB = { name: "/", children: [{ name: "1", type: "num" }, b] };
-      yield { name: "/", children: [a, { name: "/", children: [b, c] }] };
-      yield { name: "*", children: [a, { name: "/", children: [c, b] }] };
-      yield { name: "*", children: [invB, { name: "*", children: [a, c] }] };
-      yield { name: "*", children: [invB, { name: "*", children: [c, a] }] };
-      yield { name: "/", children: [c, { name: "/", children: [b, a] }] };
-      yield { name: "*", children: [c, { name: "/", children: [a, b] }] };
-    }
-
-    return;
-  }
-
-  if (item.children) {
-    for (const children of product(
-      ...item.children.map(generateAllCommutations)
-    )) {
-      yield { ...item, children };
-    }
-  } else yield item;
-}
-
-export function* generateAllAssociations(
-  item: Tree
-): Generator<Tree, any, undefined> {
+export function* generateAllAssociations(item: Tree): Generator<Tree, any, undefined> {
   if (patternMatcher("_ + (_ - _)", item)) {
     const { a, b, c } = patternMatcherDict("a + (b - c)", item);
     const aAssociations = generateAllAssociations(a);
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "+", children: [a, { name: "-", children: [b, c] }] };
       yield { name: "-", children: [{ name: "+", children: [a, b] }, c] };
     }
     return;
   }
 
-  if (
-    patternMatcher("_ + (_ + _)", item) ||
-    patternMatcher("_ * (_ * _)", item)
-  ) {
+  if (patternMatcher("_ + (_ + _)", item) || patternMatcher("_ * (_ * _)", item)) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
     const aAssociations = generateAllAssociations(a);
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name, children: [a, { name, children: [b, c] }] };
       yield { name, children: [{ name, children: [a, b] }, c] };
     }
     return;
   }
 
-  if (
-    patternMatcher("(_ + _) + _", item) ||
-    patternMatcher("(_ * _) * _", item)
-  ) {
+  if (patternMatcher("(_ + _) + _", item) || patternMatcher("(_ * _) * _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
     const aAssociations = generateAllAssociations(a);
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name, children: [a, { name, children: [b, c] }] };
       yield { name, children: [{ name, children: [a, b] }, c] };
     }
@@ -513,11 +355,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "-", children: [{ name: "+", children: [a, b] }, c] };
       yield { name: "-", children: [{ name: "-", children: [a, c] }, b] };
     }
@@ -530,11 +368,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "+", children: [a, { name: "-", children: [b, c] }] };
       yield { name: "-", children: [{ name: "+", children: [a, b] }, c] };
     }
@@ -546,11 +380,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "-", children: [a, { name: "+", children: [b, c] }] };
       yield { name: "+", children: [{ name: "-", children: [a, b] }, c] };
     }
@@ -562,49 +392,31 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "-", children: [a, { name: "-", children: [b, c] }] };
       yield { name: "+", children: [{ name: "-", children: [a, c] }, b] };
     }
   }
 
-  if (
-    patternMatcher("_ + (_ + _)", item) ||
-    patternMatcher("_ * (_ * _)", item)
-  ) {
+  if (patternMatcher("_ + (_ + _)", item) || patternMatcher("_ * (_ * _)", item)) {
     const [a, { name, children: [b, c] = [] }] = item.children!;
     const aAssociations = generateAllAssociations(a);
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name, children: [a, { name, children: [b, c] }] };
       yield { name, children: [{ name, children: [a, b] }, c] };
     }
   }
 
-  if (
-    patternMatcher("(_ + _) + _", item) ||
-    patternMatcher("(_ * _) * _", item)
-  ) {
+  if (patternMatcher("(_ + _) + _", item) || patternMatcher("(_ * _) * _", item)) {
     const [{ name, children: [a, b] = [] }, c] = item.children!;
     const aAssociations = generateAllAssociations(a);
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name, children: [a, { name, children: [b, c] }] };
       yield { name, children: [{ name, children: [a, b] }, c] };
     }
@@ -616,11 +428,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "-", children: [a, { name: "+", children: [b, c] }] };
       yield { name: "-", children: [{ name: "-", children: [a, b] }, c] };
     }
@@ -632,11 +440,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "-", children: [a, { name: "-", children: [b, c] }] };
       yield { name: "+", children: [{ name: "-", children: [a, b] }, c] };
     }
@@ -648,11 +452,7 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (let [a, b, c] of product3(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (let [a, b, c] of product3(aAssociations, bAssociations, cAssociations)) {
       yield { name: "+", children: [a, { name: "-", children: [b, c] }] };
       yield { name: "-", children: [{ name: "+", children: [a, b] }, c] };
     }
@@ -664,28 +464,20 @@ export function* generateAllAssociations(
     const bAssociations = generateAllAssociations(b);
     const cAssociations = generateAllAssociations(c);
 
-    for (const [a, b, c] of product(
-      aAssociations,
-      bAssociations,
-      cAssociations
-    )) {
+    for (const [a, b, c] of product(aAssociations, bAssociations, cAssociations)) {
       yield { name: "/", children: [{ name: "/", children: [a, b] }, c] };
       yield { name: "/", children: [a, { name: "*", children: [c, b] }] };
     }
   }
 
   if (item.children) {
-    for (const children of product(
-      ...item.children.map(generateAllAssociations)
-    )) {
+    for (const children of product(...item.children.map(generateAllAssociations))) {
       yield { ...item, children };
     }
   } else yield item;
 }
 
-export function* generateAllDistributions(
-  item: Tree
-): Generator<Tree, any, undefined> {
+export function* generateAllDistributions(item: Tree): Generator<Tree, any, undefined> {
   let unprocessedTree: Tree = item;
 
   while (true) {
@@ -696,38 +488,18 @@ export function* generateAllDistributions(
   }
 }
 
-export function* generateAllFactorizations(
-  item: Tree
-): Generator<Tree, any, undefined> {
-  let unprocessedTree: Tree = item;
-
-  while (true) {
-    yield unprocessedTree;
-    const tree = factorizeStep(unprocessedTree);
-
-    if (isEqual(unprocessedTree, tree)) break;
-    unprocessedTree = tree;
-  }
-}
-
-export function* generateAllFactorizationCommutations(
-  item: Tree
-): Generator<Tree, any, undefined> {
+export function* generateAllFactorizationCommutations(item: Tree): Generator<Tree, any, undefined> {
   for (const tree of generateAllFactorizations(item)) {
     yield* generateAllCommutations(tree);
   }
 }
-export function* generateAllFactorizationCommutationsAssociations(
-  item: Tree
-): Generator<Tree, any, undefined> {
+export function* generateAllFactorizationCommutationsAssociations(item: Tree): Generator<Tree, any, undefined> {
   for (const tree of generateAllAssociations(item)) {
     yield* generateAllFactorizationCommutations(tree);
   }
 }
 
-export function* generateAllFactorizationCommutationsAssociations2(
-  item: Tree
-): Generator<Tree, any, undefined> {
+export function* generateAllFactorizationCommutationsAssociations2(item: Tree): Generator<Tree, any, undefined> {
   for (const tree of generateAllDistributions(item)) {
     yield* generateAllFactorizationCommutationsAssociations(tree);
   }
@@ -806,89 +578,7 @@ export const distributeStep = (item: Tree): Tree => {
 
   return item;
 };
-
-export const factorizeStep = (item: Tree): Tree => {
-  if (patternMatcher("(_/b) + (_/b)", item)) {
-    const { a, b, c } = patternMatcherDict("(a/b) + (c/b)", item);
-    return {
-      name: "/",
-      children: [{ name: "+", children: [a, c] }, b],
-    };
-  }
-
-  if (patternMatcher("(_/b) - (_/b)", item)) {
-    const { a, b, c } = patternMatcherDict("(a/b) - (c/b)", item);
-    return {
-      name: "/",
-      children: [{ name: "-", children: [a, c] }, b],
-    };
-  }
-
-  if (patternMatcher("(_*_) - (_*_)", item)) {
-    const { a, b, c, d } = patternMatcherDict("(a*b) - (c*d)", item);
-    if (isEqual(b, d)) {
-      return {
-        name: "*",
-        children: [{ name: "-", children: [a, c] }, b],
-      };
-    }
-    if (isEqual(a, d)) {
-      return {
-        name: "*",
-        children: [{ name: "-", children: [b, c] }, a],
-      };
-    }
-    if (isEqual(b, c)) {
-      return {
-        name: "*",
-        children: [{ name: "-", children: [a, d] }, b],
-      };
-    }
-    if (isEqual(a, c)) {
-      return {
-        name: "*",
-        children: [{ name: "-", children: [b, d] }, c],
-      };
-    }
-  }
-
-  if (patternMatcher("(_*_) + (_*_)", item)) {
-    const { a, b, c, d } = patternMatcherDict("(a*b) + (c*d)", item);
-    if (isEqual(b, d)) {
-      return {
-        name: "*",
-        children: [{ name: "+", children: [a, c] }, b],
-      };
-    }
-    if (isEqual(a, d)) {
-      return {
-        name: "*",
-        children: [{ name: "+", children: [b, c] }, a],
-      };
-    }
-    if (isEqual(b, c)) {
-      return {
-        name: "*",
-        children: [{ name: "+", children: [a, d] }, b],
-      };
-    }
-    if (isEqual(a, c)) {
-      return {
-        name: "*",
-        children: [{ name: "+", children: [b, d] }, c],
-      };
-    }
-  }
-
-  if (item.children && item.children.length > 0) {
-    item = { ...item, children: item.children.map(factorizeStep) };
-  }
-
-  return item;
-};
-
-export const sortByCost = (costTable: CostTable = {}) =>
-  iterate(sortByCostStep(costTable));
+export const sortByCost = (costTable: CostTable = {}) => iterate(sortByCostStep(costTable));
 
 export const treeOptimizer = iterate(treeOptimizerStep);
 
@@ -899,11 +589,7 @@ const getDepth = (item: Tree): number => {
   return 1 + Math.max(...item.children.map(getDepth));
 };
 
-const treeMatcher = (
-  item: Tree,
-  matcher: Tree,
-  dict: Record<string, Tree> = {}
-): [boolean, Record<string, Tree>] => {
+const treeMatcher = (item: Tree, matcher: Tree, dict: Record<string, Tree> = {}): [boolean, Record<string, Tree>] => {
   if (matcher.name === "_") {
     return [true, dict];
   }
@@ -946,10 +632,7 @@ export const stringTreeMatcher = (pattern: string, item: Tree) => {
   return treeMatcher(item, treeExpression(patternTree));
 };
 
-export const patternMatcher = (pattern: string, item: Tree): boolean =>
-  stringTreeMatcher(pattern, item)[0];
+export const patternMatcher = (pattern: string, item: Tree): boolean => stringTreeMatcher(pattern, item)[0];
 
-const patternMatcherDict = (
-  pattern: string,
-  item: Tree
-): Record<string, Tree> => stringTreeMatcher(pattern, item)[1];
+export const patternMatcherDict = (pattern: string, item: Tree): Record<string, Tree> =>
+  stringTreeMatcher(pattern, item)[1];

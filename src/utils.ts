@@ -223,3 +223,11 @@ export function* take<T>(n: number, iterable: Iterable<T>) {
     n--;
   }
 }
+
+export function count<T>(iterable: Iterable<T>) {
+  let count = 0;
+  for (const x of iterable) {
+    count++;
+  }
+  return count;
+}

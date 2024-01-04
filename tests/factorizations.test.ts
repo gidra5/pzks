@@ -2,16 +2,12 @@ import { describe, expect } from "vitest";
 import { it } from "@fast-check/vitest";
 import { stringFromTree, treeExprFromString } from "../src/tree.js";
 import { costs } from "../src/utils.js";
-import { generateAllFactorizations, treeOptimizer } from "../src/optimizer.js";
+import { treeOptimizer } from "../src/optimizer.js";
 import { CostTable } from "../src/types.js";
+import { generateAllFactorizations } from "../src/factorizations.js";
 
 describe("commutation", () => {
-  const testCase = (
-    src,
-    expectedTrees,
-    _costs: CostTable = costs,
-    _it: any = it
-  ) =>
+  const testCase = (src, expectedTrees, _costs: CostTable = costs, _it: any = it) =>
     _it(`optimizes tree in example '${src}'`, () => {
       const exprTree = treeExprFromString(src);
       // console.log(printTree(exprTree));
@@ -19,7 +15,7 @@ describe("commutation", () => {
       const distributions = [...generateAllFactorizations(balancedTree)];
       // console.dir({ commutations }, { depth: null });
       // console.log(printTree(balancedTree));
-      console.log(distributions.map(stringFromTree));
+      // console.log(distributions.map(stringFromTree));
       // let map = new FileMap();
       // const fileName = "test";
       // map.addFile(fileName, src);
@@ -30,12 +26,7 @@ describe("commutation", () => {
       expect(distributions).toEqual(expectedTrees.map(treeExprFromString));
       // expect(true).toEqual(false);
     });
-  const testCaseLength = (
-    src,
-    expectedTreesLength,
-    _costs: CostTable = costs,
-    _it: any = it
-  ) =>
+  const testCaseLength = (src, expectedTreesLength, _costs: CostTable = costs, _it: any = it) =>
     _it(`optimizes tree in example '${src}'`, () => {
       const exprTree = treeExprFromString(src);
       // console.log(printTree(exprTree));
@@ -62,15 +53,12 @@ describe("commutation", () => {
   //   "((a * b) + (a * c)) + (b * c)",
   //   "((b + c) * a) + (b * c)",
   // ]);
-  // testCase("a*(b-2)+c*(b-2)", [
-  //   "(a * (b - 2)) + (c * (b - 2))",
-  //   "(a + c) * (b - 2)",
-  // ]);
-  // testCase("a*b-2*a+b*c-c*2", [
-  //   "((a * b) - (2 * a)) + ((b * c) - (c * 2))",
-  //   "((b - 2) * a) + ((b - 2) * c)",
-  //   "(a + c) * (b - 2)",
-  // ]);
+  testCase("a*(b-2)+c*(b-2)", ["(a * (b - 2)) + (c * (b - 2))", "(a + c) * (b - 2)"]);
+  testCase("a*b-2*a+b*c-c*2", [
+    "((a * b) - (2 * a)) + ((b * c) - (c * 2))",
+    "((b - 2) * a) + ((b - 2) * c)",
+    "(a + c) * (b - 2)",
+  ]);
 
   // testCase("a/b-c/b+2/b", [
   //   "((a / b) - (c / b)) + (2 / b)",
