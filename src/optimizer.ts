@@ -238,10 +238,7 @@ export const treeOptimizerStep = (item: Tree): Tree => {
     return { name: "0", type: "num" };
   }
 
-  if (
-    patternMatcher("x / x", item) &&
-    isEqual(item.children![0], item.children![1])
-  ) {
+  if (patternMatcher("x / x", item)) {
     return { name: "1", type: "num" };
   }
 
